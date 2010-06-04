@@ -193,7 +193,7 @@ class minitpl_compiler
 	{
 		$mycontent = preg_replace("/\<\?php.+\?\>/sU","",$contents);
 		// [a-zA-Z\_\$\"\'\[\]\ ]
-		if (preg_match_all("/\{(.+)\}/sU", $mycontent, $matches)) {
+		if (preg_match_all("/\{([^\{]+)\}/sU", $mycontent, $matches)) {
 			foreach ($matches[1] as $k=>$v) {
 				if (strstr($v,"\n")===false && $v{0}!=" ") {
 					if ($v{0}!='$') {
