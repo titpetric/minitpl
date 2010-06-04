@@ -2,6 +2,7 @@ Monotek Mini Template
 =====================
 
 Version 1.0 - Fri 04 Jul 2008 11:41:40 PM CEST
+Version 1.1 - Fri 12 Jun 2009 09:18:36 AM CEST
 
 by Tit Petrič ( tit.petric@monotek.net ) / Monotek d.o.o.
 
@@ -402,6 +403,19 @@ syntaxes can be used at the same time.
 {/if}
 ~~~~~~~~~~~~~
 
+#### 3.4. nocache
+
+Minitpl template files are translated into PHP code to give you
+the best possible execution speed. Using `include` statements
+sometimes makes it hard to invalidate this cache, so for
+development purposes we have included a `nocache` directive.
+This erases your template cache after the file has been used once.
+
+~~~~~~~~~~~~
+{*nocache*}
+~~~~~~~~~~~~
+
+This behaviour needs to be activated by setting `$tpl->_nocache` to `true`.
 
 <h3 id="blocks">4. Block and Inline definitions <a href="#top">Δ Jump to top</a></h3>
 

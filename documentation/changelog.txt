@@ -1,3 +1,13 @@
+Version 1.1
+-----------
+
+Renamed class 'template' to 'minitpl' because of multiple naming/usage issues - black
+Removed a lot of bugs regarding statement processing (parse vars) - black
+Removed unreachable & unimplemented legacy code in assign() - black
+Added nocache directive - black
+Added function_exists check with {block} definitions - black
+Actually made compiling templates into an arbitrary directory work - zobo
+
 Version 1.01
 ------------
 

@@ -389,6 +389,20 @@ V prvem primeru je demonstrirana različna sintaksa za množice.
 {/if}
 ~~~~~~~~~~~~~
 
+#### 3.4. nocache
+
+MiniTPL template datoteke se prevajajo v PHP datoteke po potrebi
+za najboljšo možno hitrost izvajanja. Z uporabo `{include}` direktiv
+se osveževanje php datotek rahlo zakomplicira. Za potrebe razvoja smo
+dodali `nocache` direktivo. Z uporabo direktive zagotovite, da se vaš
+template cache zbriše po vsaki uporabi.
+
+~~~~~~~~~~~~
+{*nocache*}
+~~~~~~~~~~~~
+
+To funkcionalnost se mora omogočiti z setiranjem `$tpl->_nocache` na `true`.
+
 <h3 id="blocks">4. Bloki in Inline definicije <a href="#top">Δ Skok na vrh</a></h3>
 
 Odvisno od uporabe boste morda želeli večkrat uporabiti delce iste kode v
