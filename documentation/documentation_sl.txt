@@ -513,7 +513,10 @@ lahko uporabite `eval_literal` sestavek. Koda znotraj sestavka se ne prevede,
 ostane torej taka kot je.
 
 ~~~~~~~~~~~
-{eval_literal global $cms_module; $_v['menu_data'] = $cms_module->get_menu("branch", array("item","menu"), true);}
+{eval_literal
+	global $cms_module;
+	$_v['menu_data'] =
+		$cms_module->get_menu("branch", array("item","menu")); }
 ~~~~~~~~~~~
 
 Uporaba `{` in `}` znotraj `eval` in `eval_literal` sestavkov ni mogoča.

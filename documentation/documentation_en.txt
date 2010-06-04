@@ -540,7 +540,10 @@ code, you can use the `eval_literal` construct. The code inside
 does not get evaluated, meaning it is kept as-is.
 
 ~~~~~~~~~~~
-{eval_literal global $cms_module; $_v['menu_data'] = $cms_module->get_menu("branch", array("item","menu"), true);}
+{eval_literal
+	global $cms_module;
+	$_v['menu_data'] =
+		$cms_module->get_menu("branch", array("item","menu")); }
 ~~~~~~~~~~~
 
 #### 5.3 php
