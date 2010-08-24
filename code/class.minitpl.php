@@ -86,7 +86,7 @@ class minitpl
 	/** Compile path calculation */
 	function _compile_path($path)
 	{
-		if ($this->_compile_location{0} == "/") {
+		if ($this->_compile_location{0} == "/" || (strpos($this->_compile_location,":")!==false)) {
 			return $this->_compile_location.$path;
 		}
 		return $path.$this->_compile_location;
