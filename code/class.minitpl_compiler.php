@@ -119,7 +119,7 @@ class minitpl_compiler
 			}
 		}
 
-		$lambda = time()."_".rand(0,999);
+		$lambda = time()."_".rand(1000,9999);
 		foreach ($blocks as $name=>$code) {
 			$block_code = "if (!function_exists('".$name."_".$lambda."')) { function ".$name."_".$lambda."(\$_v) {".$this->_tag_php_close.$code['content'].$this->_tag_php_open." } }";
 			$contents = str_replace($code['src'], $this->_code($block_code), $contents);
@@ -196,7 +196,7 @@ class minitpl_compiler
 		if (preg_match_all("/\{([^\{]+)\}/sU", $mycontent, $matches)) {
 			foreach ($matches[1] as $k=>$v) {
 				if (strstr($v,"\n")===false && $v{0}!=" ") {
-					if ($v{0}!='$') {
+					if ($v{0}!='$' && !in_array($v{0}, array(array("'",'"')))) {
 						// shorthand variables {v}
 						$v = '$'.$v;
 					}
