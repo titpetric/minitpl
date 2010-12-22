@@ -151,9 +151,9 @@ class minitpl_compiler
 				$exp = trim(trim($exp,"()"));
 				list($e_left, $e_right) = explode(" as ", $exp);
 				$e_right = explode("=>", $e_right);
-				$code = "if(!empty(".$this->_get_var($e_left)."))foreach(".$this->_get_var($e_left)." as ".$this->_get_var($e_right[0]);
+				$code = "if(!empty(".$this->_split_exp($e_left)."))foreach(".$this->_split_exp($e_left)." as ".$this->_split_exp($e_right[0]);
 				if (count($e_right)==2) {
-					$code .= '=>'.$this->_get_var($e_right[1]);
+					$code .= '=>'.$this->_split_exp($e_right[1]);
 				}
 				$code .= '){';
 				$contents = str_replace($matches[0][$k], trim($this->_code($code)), $contents);
