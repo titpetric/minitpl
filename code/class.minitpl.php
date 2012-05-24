@@ -15,14 +15,14 @@ class minitpl
 	/** Holds search paths */
 	var $_paths;
 	/** Compile location, relative or absolute */
-	var $_compile_location;
+	var $_compile_location, $_compile_absolute;
 	/** Defaults */
 	var $_defaults;
 
 	/** Default constructor */
 	function minitpl($paths=false)
 	{
-		$this->_compile_location = "cache/";
+		$this->set_compile_location("cache/", false);
 		$this->set_paths($paths);
 		$this->_defaults = array(array("ldelim","{"), array("rdelim","}"));
 		$this->_nocache = false;
@@ -78,15 +78,22 @@ class minitpl
 			$paths = array("templates/");
 		}
 		if (is_string($paths)) {
-			$paths = array($paths);
+			$paths = func_get_args();
 		}
 		$this->_paths = $paths;
+	}
+
+	/** Sets compile location */
+	function set_compile_location($path, $is_absolute)
+	{
+		$this->_compile_location = rtrim($path,"/")."/";
+		$this->_compile_absolute = $is_absolute;
 	}
 
 	/** Compile path calculation */
 	function _compile_path($path)
 	{
-		if ($this->_compile_location{0} == "/" || (strpos($this->_compile_location,":")!==false)) {
+		if ($this->_compile_absolute) {
 			return $this->_compile_location.$path;
 		}
 		return $path.$this->_compile_location;
