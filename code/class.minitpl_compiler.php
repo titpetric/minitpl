@@ -15,6 +15,7 @@ class minitpl_compiler
 		$this->_tag_php_open = "<"."?php";
 		$this->_tag_php_close = "?".">\n";
 		$this->_global_variables = array();
+		$this->_literals = array();
 	}
 
 	/** Compile template file into php code */
@@ -80,6 +81,9 @@ class minitpl_compiler
 		// strip new line whitespace between php code
 		$contents = str_replace($this->_tag_php_close."\n".$this->_tag_php_open.' ', "", $contents);
 		$contents = str_replace("echo ;", "", $contents);
+		foreach ($this->_literals as $key=>$value) {
+			$contents = str_replace("[[".$key."]]", $value, $contents);
+		}
 		return $contents;
 	}
 
@@ -115,6 +119,16 @@ class minitpl_compiler
 					$blocks[$matches[2][$k]] = $m;
 				} else {
 					$inlines[$matches[2][$k]] = $m;
+				}
+			}
+		}
+
+		if (preg_match_all("/\<script\ ([^\>]+)\>(.*?)\<\/script\>/s", $contents, $matches)) {
+			foreach ($matches[0] as $k=>$parameters) {
+				if (strpos($parameters,"text/template")!==false || strpos($parameters,"text/x-jquery")!==false) {
+					$key = count($this->_literals)."_literal";
+					$this->_literals[$key] = $matches[2][$k];
+					$contents = str_replace($matches[2][$k], "[[".$key."]]", $contents);
 				}
 			}
 		}
