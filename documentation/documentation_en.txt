@@ -613,7 +613,7 @@ For basic usage, you need to include the file `class.template.php`.
 The functions used include `class.template_compiler.php` if needed.
 The following methods are exported:
 
-`load`, `assign`, `render`, `get`, `set_paths`, `compile`
+`load`, `assign`, `render`, `get`, `set_paths`, `set_compile_location`, `compile`
 
 You will probablly only use the first four methods unless you
 want to change the default paths, where the system is searching for
@@ -680,9 +680,9 @@ it, in order to use it in PHP.
 ##### 6.4. set_paths ( [ $paths = false ] )
 
 The method `set_paths`, takes an array, with possible locations
-for template files. The compiled location is assumed to be
-a `cache/` folder located under the found path. Paths passed to
-it, must end with a trailing slash.
+for template files. The compiled location is set with the
+`set_compile_location` function documented later. Paths passed to
+this function, must end with a trailing slash.
 
 The template system will traverse the `$paths` array searching
 for template files, until one is found. If none are found, an
@@ -718,3 +718,46 @@ $tpl->set_paths($paths);
 Templating constructs like `{include}` are affected by the path
 settings. The included templates use the same paths in the same
 order, until a needed template is found.
+
+The following syntax is also allowed since 2012/05/24:
+
+~~~~~~~~~~~~~~~
+$tpl->set_paths("theme/templates/","modules/".$module_name."/templates/","include/templates/");
+~~~~~~~~~~~~~~~
+
+##### 6.5. $this->set_compile_location( [ $compile_location = "cache/" [ , $is_absolute = false ] ] );
+
+By default the compile location of the templates is relative to the
+source template folder. So, with the template locations listed above,
+you would need a `cache/` folder under every location, to store the compiled
+template files for later use.
+
+You can modify this behavior with the `set_compile_location` function.
+You can set the cache location to a common folder, and mark it as
+an absolute location (as opposed to the default, relative path).
+
+~~~~~~~~~~~~~~~
+$tpl->set_compile_location("/tmp/minitpl", true);
+~~~~~~~~~~~~~~~
+
+The example will store all your templates under `/tmp/minitpl`. This
+location needs to be writable. The compiled files under the location
+can be safely deleted any time, if you want to regenerate them.
+
+When caching, a full path structure will be created, to avoid any 
+conflicts between templates, that use same names. For example:
+
+If you have a template named `site.tpl` under two distinct locations like
+`theme/templates/` and `theme/issue2012/templates/` and use both sources,
+the conflict is resolved by creating the following structure in the
+cache location:
+
+~~~~~~~~~~~~~~~
+/tmp/minitpl/theme/templates/site.tpl
+/tmp/minitpl/theme/issue2012/templates/site.tpl
+~~~~~~~~~~~~~~~
+
+This can let you change your source folders with `set_paths~ and and the
+same time only have one cache location for all your templates. When
+you want to expunge any stale cache files or use minitpl in a more complex
+system, this is a much simpler approach for cache management.

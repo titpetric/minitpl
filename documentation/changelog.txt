@@ -1,3 +1,10 @@
+Version 1.2
+-----------
+
+Modified set_paths behaviour, keeping backward compatibility.
+Added a set_compile_location method to better control template caches.
+Added support for Hogan & JQuery-Tmpl JS templating blocks (they are not parsed)
+
 Version 1.1
 -----------
 
