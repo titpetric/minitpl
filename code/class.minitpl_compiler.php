@@ -40,6 +40,14 @@ class minitpl_compiler
 					$contents = str_replace("{include ".$file."}", $cn, $contents);
 				}
 			}
+			while (preg_match_all("/\{load\ (.*?)\}/s", $contents, $matches)) {
+				$matches = array_unique($matches[1]);
+				foreach ($matches as $file) {
+					$file_var = (substr($file,0,1) == "$") ? $this->_get_var($file) : '"'.$file.'"';
+					$cn = $this->_code('$this->push();$this->load('.$file_var.');$this->assign($_v);$this->render();$this->pop();');
+					$contents = str_replace("{include ".$file."}", $cn, $contents);
+				}
+			}
 			$nocache = $nocache ? $this->_code("@unlink(__FILE__);") : "";
 			$contents = str_replace("{*nocache*}",$nocache,$contents);
 			$contents = $this->_strip_comments($contents);
@@ -73,11 +81,9 @@ class minitpl_compiler
 	function _template_cleanup($contents)
 	{
 		// set up variables
-		$contents = $this->_code('$_v = &$this->_vars;').$contents;
+		$contents = $this->_code('$_v=&$this->vars;') . $contents;
 		// strip unnecessary php tags
 		$contents = str_replace($this->_tag_php_close.$this->_tag_php_open, "", $contents);
-		// strip empty lines
-//		$contents = preg_replace("/\n[\n]+/s","\n\n",$contents);
 		// strip new line whitespace between php code
 		$contents = str_replace($this->_tag_php_close."\n".$this->_tag_php_open.' ', "", $contents);
 		$contents = str_replace("echo ;", "", $contents);
@@ -210,7 +216,7 @@ class minitpl_compiler
 		if (preg_match_all("/\{([^\{]+)\}/sU", $mycontent, $matches)) {
 			foreach ($matches[1] as $k=>$v) {
 				if (strstr($v,"\n")===false && $v{0}!=" ") {
-					if ($v{0}!='$' && !in_array($v{0}, array(array("'",'"')))) {
+					if ($v{0}!='$' && !in_array($v{0}, array("'",'"'))) {
 						// shorthand variables {v}
 						$v = '$'.$v;
 					}
@@ -284,7 +290,9 @@ class minitpl_compiler
 		usort($variables,array("minitpl_compiler", "_strlen_sort"));
 		$variables = array_reverse($variables);
 		foreach ($variables as $var) {
-			$exp = str_replace($var,$this->_get_var($var),$exp);
+			if ($var != '$this') {
+				$exp = str_replace($var,$this->_get_var($var),$exp);
+			}
 		}
 		return $exp;
 	}
