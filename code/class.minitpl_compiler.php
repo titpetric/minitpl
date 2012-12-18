@@ -18,24 +18,28 @@ class minitpl_compiler
 		$this->_literals = array();
 	}
 
+	private function load_contents($filename)
+	{
+		if (($contents = file_get_contents($filename)) !== false) {
+			if (substr($contents, 0, 3) == "\xEF\xBB\xBF") {
+				return substr($contents, 3);
+			}
+		}
+		return $contents;
+	}
+
 	/** Compile template file into php code */
 	function compile($filename, $output_filename, $find_path, $nocache)
 	{
-		$contents = file_get_contents($filename);
+		$contents = $this->load_contents($filename);
 		$r = 0;
 		if ($contents!==false && $contents!=="") {
-			if (substr($contents,0,3)=="\xEF\xBB\xBF") {
-				$contents = substr($contents,3);
-			}
 			while (preg_match_all("/\{include\ (.*?)\}/s", $contents, $matches)) {
 				$matches = array_unique($matches[1]);
 				foreach ($matches as $file) {
 					$cn = "<!-- ".$file." -->";
 					if (($fn = call_user_func($find_path, $file))!==false) {
-						$cn = file_get_contents($fn.$file);
-						if (substr($cn,0,3)=="\xEF\xBB\xBF") {
-							$cn = substr($cn,3);
-						}
+						$cn = $this->load_contents($fn.$file);
 					}
 					$contents = str_replace("{include ".$file."}", $cn, $contents);
 				}
