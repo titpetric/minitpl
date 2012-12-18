@@ -49,7 +49,7 @@ class minitpl_compiler
 				foreach ($matches as $file) {
 					$file_var = (substr($file,0,1) == "$") ? $this->_get_var($file) : '"'.$file.'"';
 					$cn = $this->_code('$this->push();$this->load('.$file_var.');$this->assign($_v);$this->render();$this->pop();');
-					$contents = str_replace("{include ".$file."}", $cn, $contents);
+					$contents = str_replace("{load ".$file."}", $cn, $contents);
 				}
 			}
 			$nocache = $nocache ? $this->_code("@unlink(__FILE__);") : "";
