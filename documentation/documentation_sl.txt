@@ -1,7 +1,7 @@
 Monotek Mini Template
 =====================
 
-Različica 1.0 - Fri 04 Jul 2008 11:41:56 PM CEST
+Zadnje posodobljeno - Tue 18 Dec 2012 11:24:30 AM CET
 
 Avtor: Tit Petrič ( tit.petric@monotek.net ) / Monotek d.o.o.<br/>
 
@@ -138,7 +138,7 @@ Zgornja koda se prevede v naslednje:
 
 ~~~~~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo htmlspecialchars($_v['variable'], ENT_QUOTES);
 	echo strtoupper($_v['variable']);
 	echo add_id_up($_v['variable']);
@@ -162,7 +162,7 @@ se glede na to prilagodi prevedeno kodo.
 
 ~~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo $_v['memcache']->get($_v['variable']);
 ?>
 ~~~~~~~~~~~
@@ -171,7 +171,7 @@ se glede na to prilagodi prevedeno kodo.
 
 ~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	global $memcache;
 	echo $memcache->get($_v['variable']);
 ?>
@@ -187,7 +187,7 @@ Kar se prevede se v naslednje:
 
 ~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo $_v['memcache']->variable;
 ?>
 ~~~~~~~~~~
@@ -196,7 +196,7 @@ ali
 
 ~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	global $memcache;
 	echo $memcache->variable;
 ?>
@@ -220,7 +220,7 @@ Zgornja koda se prevede v naslednje:
 
 ~~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo _MY_CONSTANT;
 	echo _this_is_also_a_constant;
 	echo $_v['_my_variable'];
@@ -245,6 +245,25 @@ vključite poljubno število drugih template datotek.
 {include site_header.tpl}
 {$contents}
 {include site_footer.tpl}
+</body>
+</html>
+~~~~~~~~~~~
+
+Če želite imeti dejansko nalaganje skupnih datotek, kar reši nekatere težave
+okoli dinamičnega nalaganja in hranjenja cache datotek, potem uporabite `{load}`:
+
+Imejte v mislih, da s to metodo ni možna uporaba `inline` in `blok` definicij
+izven naložene template datoteke. To lahko dosežete z uporabo `include`.
+
+~~~~~~~~~~~
+<html>
+<head>
+	<title>{$title}</title>
+</head>
+<body>
+{load $dynamic_header}
+{load $dynamic_contents_template}
+{load $dynamic_footer}
 </body>
 </html>
 ~~~~~~~~~~~
@@ -435,7 +454,7 @@ Prevedena template datoteka bo izgledala nekako takole:
    the compile aspect of blocks, but is not
    a carbon copy of the compiled template. */
 
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	function recurse_1213891842_673($_v) {
 		if ($_v['i']++ < 10) {
 	        	echo "call ".$_v['i'];
@@ -553,7 +572,7 @@ Zgornja koda se prevede v:
 
 ~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 
 	function mygettime()
 	{

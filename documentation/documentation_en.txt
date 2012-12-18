@@ -1,8 +1,7 @@
 Monotek Mini Template
 =====================
 
-Version 1.0 - Fri 04 Jul 2008 11:41:40 PM CEST
-Version 1.1 - Fri 12 Jun 2009 09:18:36 AM CEST
+Last update - Tue 18 Dec 2012 11:24:08 AM CET
 
 by Tit Petrič ( tit.petric@monotek.net ) / Monotek d.o.o.
 
@@ -148,7 +147,7 @@ The above code gets compiled to:
 
 ~~~~~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo htmlspecialchars($_v['variable'], ENT_QUOTES);
 	echo strtoupper($_v['variable']);
 	echo add_id_up($_v['variable']);
@@ -173,7 +172,7 @@ If the global object doesn't exist, it assumes a local object.
 
 ~~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo $_v['memcache']->get($_v['variable']);
 ?>
 ~~~~~~~~~~~
@@ -183,7 +182,7 @@ compile time:
 
 ~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	global $memcache;
 	echo $memcache->get($_v['variable']);
 ?>
@@ -199,14 +198,14 @@ Compiles to one of theese:
 
 ~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo $_v['memcache']->variable;
 ?>
 ~~~~~~~~~~
 
 ~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	global $memcache;
 	echo $memcache->variable;
 ?>
@@ -230,7 +229,7 @@ The above code gets compiled to:
 
 ~~~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	echo _MY_CONSTANT;
 	echo _this_is_also_a_constant;
 	echo $_v['_my_variable'];
@@ -259,6 +258,27 @@ There is no limit to the number of files you can include.
 </body>
 </html>
 ~~~~~~~~~~~
+
+If you need to include template files dynamically, you can use `{load}` to
+do this. This will solve some caching problems and enable you to use templates
+based on what you pass to the main template as variables via `assign`.
+
+Keep in mind that with this you can't use the `inline` and `block` definitions
+outside the loaded template, but with `include` you can.
+
+~~~~~~~~~~~
+<html>
+<head>
+	<title>{$title}</title>
+</head>
+<body>
+{load $dynamic_header}
+{load $dynamic_contents_template}
+{load $dynamic_footer}
+</body>
+</html>
+~~~~~~~~~~~
+
 
 #### 1.7. Comments
 
@@ -452,7 +472,7 @@ The compiled template will look something like this:
    the compile aspect of blocks, but is not
    a carbon copy of the compiled template. */
 
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 	function recurse_1213891842_673($_v) {
 		if ($_v['i']++ < 10) {
 	        	echo "call ".$_v['i'];
@@ -578,7 +598,7 @@ The above code gets compiled into:
 
 ~~~~~~~~~
 <?php
-	$_v = &$this->_vars;
+	$_v = &$this->vars;
 
 	function mygettime()
 	{
