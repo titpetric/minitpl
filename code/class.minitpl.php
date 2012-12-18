@@ -10,14 +10,17 @@ http://creativecommons.org/licenses/by-sa/3.0/
 /** Template class */
 class minitpl
 {
-	/** Holds assigned values */
-	var $_vars;
 	/** Holds search paths */
 	var $_paths;
 	/** Compile location, relative or absolute */
 	var $_compile_location, $_compile_absolute;
 	/** Defaults */
 	var $_defaults;
+
+	/** Hold assigned values, filenames, stack */
+	private $stack = array();
+	private $filename;
+	private $vars;
 
 	/** Default constructor */
 	function minitpl($paths=false)
@@ -35,8 +38,23 @@ class minitpl
 
 	function _default_vars()
 	{
-		$this->_vars = array();
-		foreach ($this->_defaults as $v) { $this->assign($v[0],$v[1]); }
+		if (empty($this->stack)) {
+			$this->vars = array();
+		}
+		$this->filename = false;
+		foreach ($this->_defaults as $v) {
+			$this->assign($v[0],$v[1]);
+		}
+	}
+
+	function push()
+	{
+		$this->stack[] = $this->filename;
+	}
+
+	function pop()
+	{
+		list($this->filename) = array_splice($this->stack, -1);
 	}
 
 	/** Template loader */
@@ -55,9 +73,9 @@ class minitpl
 			} else {
 				$r = $this->compile($f_original, $f_compiled);
 			}
-			$this->_load_file = $f_compiled;
+			$this->filename = $f_compiled;
 			if (!$r) {
-				echo "Template file ".$f_compiled." doesn't exist! Is the compile dir writeable?\n";
+				echo "Template file ".$filename." doesn't exist! Is the compile dir writeable?\n";
 				die;
 			}
 		}
@@ -119,7 +137,7 @@ class minitpl
 				$value .= '_';
 			}
 			foreach ($key as $k=>$v) {
-				$this->_vars[$value.$k] = $v;
+				$this->vars[$value.$k] = $v;
 			}
 		} else {
 			// $key is a string, do stuff depending on value and prefix
@@ -127,7 +145,7 @@ class minitpl
 			if ($concat) {
 				$key = substr($key,1);
 			}
-			$this->_vars[$key] = ($concat ? (is_array($value) ? array_merge($this->_vars[$key],$value) : $this->_vars[$key].$value) : $value);
+			$this->vars[$key] = ($concat ? (is_array($value) ? array_merge($this->vars[$key],$value) : $this->vars[$key].$value) : $value);
 		}
 		return ""; // {$this->assign} calls, ouch
 	}
@@ -135,7 +153,7 @@ class minitpl
 	/** Render the template to standard output */
 	function render()
 	{
-		include($this->_load_file);
+		include($this->filename);
 	}
 
 	/** Render the template and return text */
