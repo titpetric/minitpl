@@ -47,7 +47,7 @@ class minitpl_compiler
 			while (preg_match_all("/\{load\ (.*?)\}/s", $contents, $matches)) {
 				$matches = array_unique($matches[1]);
 				foreach ($matches as $file) {
-					$file_var = (substr($file,0,1) == "$") ? $this->_get_var($file) : '"'.$file.'"';
+					$file_var = $this->_split_exp($file);
 					$cn = $this->_code('$this->push();$this->load('.$file_var.');$this->assign($_v);$this->render();$this->pop();');
 					$contents = str_replace("{load ".$file."}", $cn, $contents);
 				}
