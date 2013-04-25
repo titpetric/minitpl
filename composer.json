@@ -2,6 +2,8 @@
 
   "name": "monotek/minitpl",
 
+  "version": "1.0.0",
+
   "description": "Miniature fully featured PHP template engine",
 
   "keywords": ["monotek", "minitpl", "template", "php", "tiny", "small", "smarty"],
@@ -20,6 +22,10 @@
   "license": "CC BY-SA 3.0",
 
   "type": "library",
+
+  "require": {
+      "php": ">=5.3.0"
+  },
 
   "autoload": {
     "psr-0": {

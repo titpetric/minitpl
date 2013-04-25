@@ -1,16 +1,18 @@
 <?php
 
+namespace Monotek\MiniTPL;
+
 /*
 
-Tit Petrič, Monotek d.o.o., (cc) 2008, tit.petric@monotek.net
+Tit Petrič, Monotek d.o.o., (cc) tit.petric@monotek.net
 http://creativecommons.org/licenses/by-sa/3.0/
 
 */
 
 /** Template compiler class */
-class minitpl_compiler
+class Compiler
 {
-	function minitpl_compiler()
+	function __construct()
 	{
 		$this->_tag_php_open = "<"."?php";
 		$this->_tag_php_close = "?".">\n";

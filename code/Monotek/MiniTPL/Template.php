@@ -1,14 +1,16 @@
 <?php
 
+namespace Monotek\MiniTPL;
+
 /*
 
-Tit Petrič, Monotek d.o.o., (cc) 2008, tit.petric@monotek.net
+Tit Petrič, Monotek d.o.o., (cc) tit.petric@monotek.net
 http://creativecommons.org/licenses/by-sa/3.0/
 
 */
 
 /** Template class */
-class minitpl
+class Template
 {
 	/** Holds search paths */
 	var $_paths;
@@ -23,7 +25,7 @@ class minitpl
 	private $vars;
 
 	/** Default constructor */
-	function minitpl($paths=false)
+	function __construct($paths=false)
 	{
 		$this->set_compile_location("cache/", false);
 		$this->set_paths($paths);
@@ -85,8 +87,7 @@ class minitpl
 	/** Compile template */
 	function compile($s,$d)
 	{
-		include_once(dirname(__FILE__).'/class.minitpl_compiler.php');
-		$c = new minitpl_compiler;
+		$c = new Compiler;
 		return $c->compile($s,$d,array(&$this,"_find_path"),$this->_nocache);
 	}
 
