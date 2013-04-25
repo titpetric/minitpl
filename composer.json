@@ -2,8 +2,6 @@
 
   "name": "monotek/minitpl",
 
-  "version": "1.0.0",
-
   "description": "Miniature fully featured PHP template engine",
 
   "keywords": ["monotek", "minitpl", "template", "php", "tiny", "small", "smarty"],
