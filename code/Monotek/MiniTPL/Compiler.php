@@ -293,26 +293,24 @@ class Compiler
 				$variables[] = $object;
 			}
 		}
-		usort($variables,array("minitpl_compiler", "_strlen_sort"));
-		$variables = array_reverse($variables);
+
+		// closure to sort vars by length and alphabetically
+		usort($variables, function($a, $b) {
+					if (strlen($a)==strlen($b)) {
+						if ($a==$b) {
+							return 0;
+						}
+						return ($a<$b) ? 1 : -1;
+					}
+					return (strlen($a)<strlen($b)) ? 1 : -1;
+				} );
+
 		foreach ($variables as $var) {
 			if ($var != '$this') {
-				$exp = str_replace($var,$this->_get_var($var),$exp);
+				$exp = str_replace($var, $this->_get_var($var), $exp);
 			}
 		}
 		return $exp;
-	}
-
-	/** Helper function for sorting array by string length */
-	function _strlen_sort($a,$b)
-	{
-		if (strlen($a)==strlen($b)) {
-			if ($a==$b) {
-				return 0;
-			}
-			return ($a<$b) ? -1 : 1;
-		}
-		return (strlen($a)<strlen($b)) ? -1 : 1;
 	}
 
 	/** Helper function for replacing tags into actual variable locations */
