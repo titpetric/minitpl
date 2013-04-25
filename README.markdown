@@ -12,9 +12,9 @@ So it beats Smarty, and usual PHP vsprintf and str_replace functionality.
 With a total size of about 13KB and the functionality contained, this is
 one of the smallest full featured template engines for PHP to date.
 
-MiniTPL is available on (packagist)[https://packagist.org/packages/monotek/minitpl].
+MiniTPL is available on [packagist as monotek/minitpl](https://packagist.org/packages/monotek/minitpl).
 
-To start using MiniTPL in your project with (composer)[http://getcomposer.org/], create a composer.json file:
+To start using MiniTPL in your project with [composer](http://getcomposer.org/), create a composer.json file:
 ```
 {
     "require": {
