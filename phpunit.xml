@@ -1,0 +1,7 @@
+<phpunit bootstrap="test/bootstrap.php" colors="true">
+    <testsuites>
+        <testsuite name="MiniTPL for PHP - Test Suite">
+            <file>test/TemplateTest.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>
