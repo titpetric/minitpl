@@ -49,7 +49,7 @@ class Compiler
 			while (preg_match_all("/\{load\ (.*?)\}/s", $contents, $matches)) {
 				$matches = array_unique($matches[1]);
 				foreach ($matches as $file) {
-					$file_var = $this->_split_exp($file);
+					$file_var = (substr($file,0,1) == '$') ? $this->_split_exp($file) : '"'.$file.'"';
 					$cn = $this->_code('$this->push();$this->load('.$file_var.');$this->assign($_v);$this->render();$this->pop();');
 					$contents = str_replace("{load ".$file."}", $cn, $contents);
 				}
@@ -249,7 +249,8 @@ class Compiler
 	}
 
 	/** Split up variables from a php expression and replace them with actual variable locations */
-	function _split_exp($exp) {
+	function _split_exp($exp)
+	{
 		$code = str_replace(".","__1","<"."?php if (".$exp.") { ?".">");
 		$tokens = token_get_all($code);
 		$objects = array();
