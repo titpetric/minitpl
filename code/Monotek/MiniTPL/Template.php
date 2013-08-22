@@ -33,7 +33,7 @@ class Template
 		$this->_nocache = false;
 	}
 
-	function add_default($k,$v)
+	function add_default($k,$v='')
 	{
 		$this->_defaults[] = array($k,$v);
 	}
