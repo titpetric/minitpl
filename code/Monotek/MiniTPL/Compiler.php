@@ -288,7 +288,7 @@ class Compiler
 		}
 		// globalize objects
 		foreach ($objects as $object) {
-			if ($object!='$this' && is_object(&$GLOBALS[substr($object,1)])) {
+			if ($object!='$this' && is_object($GLOBALS[substr($object,1)])) {
 				$this->_global_variables[] = $object;
 			} else {
 				$variables[] = $object;
