@@ -58,7 +58,7 @@ class Compiler
 			$contents = str_replace("{*nocache*}",$nocache,$contents);
 			$contents = $this->_strip_comments($contents);
 			$contents = $this->_parse_constants($contents);
-			$contents = $this->_parse_functions($contents);
+			$contents = $this->_parse_functions($contents, $filename);
 			$contents = $this->_parse_expressions($contents);
 			$contents = $this->_parse_variables($contents);
 			if (!empty($this->_global_variables)) {
@@ -120,7 +120,7 @@ class Compiler
 	}
 
 	/** Search and replace for function blocks and inline definitions */
-	function _parse_functions($contents)
+	function _parse_functions($contents, $filename)
 	{
 		$inlines = $blocks = array();
 
@@ -145,8 +145,8 @@ class Compiler
 			}
 		}
 
-		$lambda = time()."_".rand(1000,9999);
 		foreach ($blocks as $name=>$code) {
+			$lambda = sprintf("%u", crc32($code['content']))."_".sprintf("%u", crc32($filename));
 			$block_code = "if (!function_exists('".$name."_".$lambda."')) { function ".$name."_".$lambda."(\$_v) {".$this->_tag_php_close.$code['content'].$this->_tag_php_open." } }";
 			$contents = str_replace($code['src'], $this->_code($block_code), $contents);
 		}
@@ -254,8 +254,8 @@ class Compiler
 		$code = str_replace(".","__1","<"."?php if (".$exp.") { ?".">");
 		$tokens = token_get_all($code);
 		$objects = array();
+		$variable = false;
 		$variables = array();
-		$waiting = false;
 		$variable_continues = false;
 		foreach ($tokens as $k=>$v) {
 			if (is_array($v)) {
@@ -268,7 +268,6 @@ class Compiler
 						$variables[] = $variable;
 					}
 					$variable = $variable_continues ? $variable.$v[1] : $v[1];
-					$waiting = true;
 					if (strstr($variable,"__1")!==false) {
 						$variable = str_replace("__1",".",$variable);
 						$variable_continues = false;
