@@ -12,6 +12,9 @@ http://creativecommons.org/licenses/by-sa/3.0/
 /** Template class */
 class Template
 {
+	const E_TEMPLATE_COMPILE = "Template file '%s' doesn't exist! Is the compile dir writable?";
+	const E_FILENAME_EMPTY = "Filename can't be empty, tried to render '%s'";
+
 	/** Holds search paths */
 	var $_paths;
 	/** Compile location, relative or absolute */
@@ -22,6 +25,7 @@ class Template
 	/** Hold assigned values, filenames, stack */
 	private $stack = array();
 	private $filename;
+	private $source;
 	private $vars;
 
 	/** Default constructor */
@@ -77,10 +81,10 @@ class Template
 			}
 			$this->filename = $f_compiled;
 			if (!$r) {
-				echo "Template file ".$filename." doesn't exist! Is the compile dir writeable?\n";
-				die;
+				throw new \Exception(sprintf(self::E_TEMPLATE_COMPILE, $filename));
 			}
 		}
+		$this->source = $filename;
 		return (bool)$r;
 	}
 
@@ -154,6 +158,9 @@ class Template
 	/** Render the template to standard output */
 	function render()
 	{
+		if ($this->filename === false) {
+			throw new \Exception(sprintf(self::E_FILENAME_EMPTY, $this->source));
+		}
 		include($this->filename);
 	}
 
