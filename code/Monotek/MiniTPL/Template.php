@@ -155,6 +155,12 @@ class Template
 		return ""; // {$this->assign} calls, ouch
 	}
 
+	/** Get variable */
+	function getVar($key)
+	{
+		return isset($this->vars[$key]) ? $this->vars[$key] : false;
+	}
+
 	/** Render the template to standard output */
 	function render()
 	{

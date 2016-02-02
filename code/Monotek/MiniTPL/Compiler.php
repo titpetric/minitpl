@@ -20,7 +20,7 @@ class Compiler
 		$this->_literals = array();
 	}
 
-	private function load_contents($filename)
+	protected function load_contents($filename)
 	{
 		if (($contents = file_get_contents($filename)) !== false) {
 			if (substr($contents, 0, 3) == "\xEF\xBB\xBF") {
