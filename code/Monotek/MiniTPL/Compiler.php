@@ -177,7 +177,13 @@ class Compiler
 				$exp = trim(trim($exp,"()"));
 				list($e_left, $e_right) = explode(" as ", $exp);
 				$e_right = explode("=>", $e_right);
-				$code = "if(!empty(".$this->_split_exp($e_left)."))foreach(".$this->_split_exp($e_left)." as ".$this->_split_exp($e_right[0]);
+
+				$left_exp = $this->_split_exp($e_left);
+				$code = "";
+				if (substr($left_exp, 0, 5) !== "array") {
+					$code = "if(!empty(".$left_exp."))";
+				}
+				$code .= "foreach(".$left_exp." as ".$this->_split_exp($e_right[0]);
 				if (count($e_right)==2) {
 					$code .= '=>'.$this->_split_exp($e_right[1]);
 				}
