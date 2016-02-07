@@ -23,10 +23,10 @@ class Template
 	var $_defaults;
 
 	/** Hold assigned values, filenames, stack */
-	private $stack = array();
-	private $filename;
-	private $source;
-	private $vars;
+	protected $stack = array();
+	protected $filename;
+	protected $source;
+	protected $vars;
 
 	/** Default constructor */
 	function __construct($paths=false)
