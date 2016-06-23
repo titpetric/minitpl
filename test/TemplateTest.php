@@ -82,6 +82,13 @@ class TemplateTest extends PHPUnit_Framework_TestCase
 		exec("rm -rf test/templates/test -rf", $retval);
 	}
 
+	public function testGetVar()
+	{
+		$tpl = new Monotek\MiniTPL\Template;
+		$tpl->assign("foo", "bar");
+		$this->assertEquals("bar", $tpl->getVar("foo"));
+	}
+
 	public function testException()
 	{
 		$this->setExpectedException("Exception");

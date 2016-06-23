@@ -23,7 +23,7 @@ To start using MiniTPL in your project with [composer](http://getcomposer.org/),
 }
 ```
 
-And run `composer install`. You can start using MiniTPL right away
+And run `composer install`. You can start using MiniTPL right away.
 
 ```
 <?php
@@ -35,3 +35,8 @@ $tpl = new Monotek\MiniTPL\Template;
 $tpl->load("test.tpl");
 $tpl->render();
 ```
+
+# Testing
+
+The project tries to maintain 100% code coverage. You can verify this by running `phpunit --coverage-text`,
+or uncommenting the logging section within phpunit.xml.

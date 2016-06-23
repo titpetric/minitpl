@@ -16,7 +16,9 @@
 	    <file>/usr/local/bin/phpunit</file>
         </blacklist>
     </filter>
+<!--
     <logging>
         <log type="coverage-html" target="./test/coverage" highlight="true"/>
     </logging>
+-->
 </phpunit>
