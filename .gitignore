@@ -1,2 +1,3 @@
-test/compile
-vendor
+/composer.lock
+/test/compile
+/vendor
