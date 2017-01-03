@@ -12,12 +12,22 @@ http://creativecommons.org/licenses/by-sa/3.0/
 /** Template compiler class */
 class Compiler
 {
+	protected $hooks = array(
+		Hook::POSITION_PRE => array(),
+		Hook::POSITION_POST => array()
+	);    
+    
 	function __construct()
 	{
 		$this->_tag_php_open = "<"."?php";
 		$this->_tag_php_close = "?".">\n";
 		$this->_global_variables = array();
 		$this->_literals = array();
+	}
+    
+	function set_hooks($hooks)
+	{
+		$this->hooks = $hooks;
 	}
 
 	protected function load_contents($filename)
@@ -34,6 +44,11 @@ class Compiler
 	function compile($filename, $output_filename, $find_path, $nocache)
 	{
 		$contents = $this->load_contents($filename);
+        
+		foreach ($this->hooks[Hook::POSITION_PRE] as $hook) {
+			$contents = $hook->execute($filename, $contents);
+		}
+        
 		$r = 0;
 		if ($contents!==false && $contents!=="") {
 			while (preg_match_all("/\{include\ (.*?)\}/s", $contents, $matches)) {
@@ -66,6 +81,11 @@ class Compiler
 				$contents = $this->_code('global '.implode(", ",$globals).';').$contents;
 			}
 			$contents = $this->_template_cleanup($contents);
+            
+            foreach ($this->hooks[Hook::POSITION_POST] as $hook) {
+    			$contents = $hook->execute($filename, $contents);
+    		}            
+            
 			$this->_r_mkdir(dirname($output_filename));
 			if ($f = @fopen($output_filename,"w")) {
 				fwrite($f, $contents);
