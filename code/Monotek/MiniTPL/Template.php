@@ -27,6 +27,10 @@ class Template
 	protected $filename;
 	protected $source;
 	protected $vars;
+	protected $hooks = array(
+		Hook::POSITION_PRE => array(),
+		Hook::POSITION_POST => array()
+	);
 
 	/** Default constructor */
 	function __construct($paths=false)
@@ -51,6 +55,19 @@ class Template
 		foreach ($this->_defaults as $v) {
 			$this->assign($v[0],$v[1]);
 		}
+	}
+
+	function add_hook($hook, $position)
+	{
+		$this->hooks[$position][] = $hook;
+	}
+    
+	function clear_hooks()
+	{
+		$this->hooks = array(
+			Hook::POSITION_PRE => array(),
+			Hook::POSITION_POST => array()
+		);
 	}
 
 	function push()
@@ -92,6 +109,7 @@ class Template
 	function compile($s,$d)
 	{
 		$c = new Compiler;
+		$c->set_hooks($this->hooks);
 		return $c->compile($s,$d,array(&$this,"_find_path"),$this->_nocache);
 	}
 
