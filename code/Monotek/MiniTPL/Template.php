@@ -164,7 +164,7 @@ class Template
 			}
 		} else {
 			// $key is a string, do stuff depending on value and prefix
-			$concat = ($key{0}=='.');
+			$concat = ($key[0]=='.');
 			if ($concat) {
 				$key = substr($key,1);
 			}

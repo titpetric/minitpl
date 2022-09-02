@@ -247,8 +247,8 @@ class Compiler
 		// [a-zA-Z\_\$\"\'\[\]\ ]
 		if (preg_match_all("/\{([^\{]+)\}/sU", $mycontent, $matches)) {
 			foreach ($matches[1] as $k=>$v) {
-				if (strstr($v,"\n")===false && $v{0}!=" ") {
-					if ($v{0}!='$' && !in_array($v{0}, array("'",'"'))) {
+				if (strstr($v,"\n")===false && $v[0]!=" ") {
+					if ($v[0]!='$' && !in_array($v[0], array("'",'"'))) {
 						// shorthand variables {v}
 						$v = '$'.$v;
 					}
@@ -343,16 +343,16 @@ class Compiler
 	function _get_var($var) {
 		$left_modifier = substr($var,1); // remove $
 		$retval = $var;
-		if ($var{0}!='"' && $var{0}!="'") {
+		if ($var[0]!='"' && $var[0]!="'") {
 			$retval = '$_v';
 			if (strstr($left_modifier,'.')!==false) {
 				// we have ourselves a table index
 				$table_indices = explode('.',$left_modifier);
 				foreach ($table_indices as $v) {
-					$retval .= (($v{0}=='$') ? "[".$this->_get_var($v)."]" : "['".$v."']");
+					$retval .= (($v[0]=='$') ? "[".$this->_get_var($v)."]" : "['".$v."']");
 				}
 			} else {
-				$retval .= (($left_modifier{0}=='$') ? "[".$this->_get_var($left_modifier)."]" : "['".$left_modifier."']");
+				$retval .= (($left_modifier[0]=='$') ? "[".$this->_get_var($left_modifier)."]" : "['".$left_modifier."']");
 			}
 		}
 		return $retval;
