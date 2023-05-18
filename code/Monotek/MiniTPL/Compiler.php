@@ -280,7 +280,7 @@ class Compiler
 		$code = str_replace(".","__1","<"."?php if (".$exp.") { ?".">");
 		$tokens = token_get_all($code);
 		$objects = array();
-		$variable = false;
+		$variable = null;
 		$variables = array();
 		$variable_continues = false;
 		foreach ($tokens as $k=>$v) {
