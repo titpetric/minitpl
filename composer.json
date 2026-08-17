@@ -31,6 +31,6 @@
   },
 
   "archive": {
-    "exclude": ["/test", "/documentation", "/vendor", "/git_hooks", "/phpunit.xml", "/.gitmodules"]
+    "exclude": ["/test", "/docs", "/vendor", "/phpunit.xml"]
   }
 }
