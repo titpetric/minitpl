@@ -30,7 +30,10 @@ jobs:
     passthru: true
     depends_on: [deps]
     steps:
-      - phpunit
+      - name: phpunit
+        run: phpunit
+      - name: phpscript test
+        run: phpscript test ./...
 
   clean:
     desc: "Remove build and test artifacts"
