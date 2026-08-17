@@ -30,15 +30,12 @@ final class TemplateTest extends TestCase
 	protected function tearDown(): void
 	{
 		self::rmdir(self::RUNTIME_COMPILE);
-		unset($GLOBALS['tpl']);
 	}
 
 	#[DataProvider('compileProvider')]
 	public function testCompile(string $template): void
 	{
-		// 12_global_objects.tpl asserts that the compiler detects globals,
-		// so $tpl has to be a global object while compiling.
-		$GLOBALS['tpl'] = $tpl = $this->template();
+		$tpl = $this->template();
 
 		$destination = self::COMPILE . $template;
 		$result = $tpl->compile(self::TEMPLATES . $template, $destination);
@@ -153,10 +150,17 @@ final class TemplateTest extends TestCase
 	#[DataProvider('varsProvider')]
 	public function testSplitExpression(string $expression, string $expected, string $description): void
 	{
-		// $tpl is a global object, $tplx is not: the compiler treats them differently.
-		$GLOBALS['tpl'] = new Compiler();
+		$compiler = new Compiler();
 
-		$this->assertSame($expected, $GLOBALS['tpl']->_split_exp($expression), $description);
+		$this->assertSame($expected, $compiler->_split_exp($expression), $description);
+	}
+
+	public function testSplitExpressionRecognizesPhpTokenConstants(): void
+	{
+		$compiler = new Compiler();
+
+		$this->assertSame("\$_v['variable']", $compiler->_split_exp('$variable'));
+		$this->assertSame("\$_v['object']->method()", $compiler->_split_exp('$object->method()'));
 	}
 
 	/** @return iterable<string, array{string, string, string}> */
@@ -169,8 +173,8 @@ final class TemplateTest extends TestCase
 		yield 'variable concat' => ['$var1 . $var2', "\$_v['var1'] . \$_v['var2']", 'variable concat'];
 		yield 'array var index' => ['$var1.$var2', "\$_v['var1'][\$_v['var2']]", 'array var index'];
 		yield 'array int index' => ['$items.0', "\$_v['items']['0']", 'array int index'];
-		yield 'global function' => ['$tpl->get()', '$tpl->get()', 'global function'];
-		yield 'object function' => ['$tplx->get()', "\$_v['tplx']->get()", 'object function'];
+		yield 'object function' => ['$tpl->get()', "\$_v['tpl']->get()", 'object function'];
+		yield 'second object function' => ['$tplx->get()', "\$_v['tplx']->get()", 'second object function'];
 	}
 
 	/** A template configured against the test fixtures. */
