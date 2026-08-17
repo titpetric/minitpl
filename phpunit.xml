@@ -1,24 +1,20 @@
-<phpunit bootstrap="test/bootstrap.php" colors="true">
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/13.0/phpunit.xsd"
+         bootstrap="test/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         failOnRisky="true"
+         failOnWarning="true">
     <testsuites>
         <testsuite name="MiniTPL for PHP - Test Suite">
-            <file>test/TemplateTest.php</file>
+            <directory suffix="Test.php">test</directory>
         </testsuite>
     </testsuites>
-    <filter>
-        <whitelist>
+    <source>
+        <include>
             <directory suffix=".php">code</directory>
-	    <exclude>
-		<directory suffix=".php">vendor</directory>
-	    </exclude>
-        </whitelist>
-        <blacklist>
-	    <directory suffix=".php">vendor</directory>
-	    <file>/usr/local/bin/phpunit</file>
-        </blacklist>
-    </filter>
-<!--
-    <logging>
-        <log type="coverage-html" target="./test/coverage" highlight="true"/>
-    </logging>
--->
+        </include>
+    </source>
 </phpunit>

@@ -1,9 +1,9 @@
-Monotek Mini Template
-=====================
+MiniTPL - Mini Template
+=======================
 
 Last update - Tue 18 Dec 2012 11:24:08 AM CET
 
-by Tit Petrič ( tit.petric@monotek.net ) / Monotek d.o.o.
+by Tit Petrič ( tit.petric@gmail.com )
 
 
 Introduction
@@ -25,7 +25,7 @@ Share Alike](http://creativecommons.org/licenses/by-sa/3.0/) license.
 Installation and Requirement
 ----------------------------
 
-Monotek Mini Template requires PHP version 4.3.0 or later.
+MiniTPL requires PHP version 4.3.0 or later.
 
 It can work with lower php versions also, if you provide
 your own [file_get_contents()](http://php.net/file_get_contents) function.

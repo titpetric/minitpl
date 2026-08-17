@@ -1,10 +1,10 @@
 <?php
 
-namespace Monotek\MiniTPL;
+namespace MiniTPL;
 
 /*
 
-Tit Petrič, Monotek d.o.o., (cc) tit.petric@monotek.net
+Tit Petric, (cc) black@titpetric.com
 http://creativecommons.org/licenses/by-sa/3.0/
 
 */
@@ -17,6 +17,8 @@ class Template
 
 	/** Holds search paths */
 	var $_paths;
+	/** Disable cache */
+	var $_nocache = false;
 	/** Compile location, relative or absolute */
 	var $_compile_location, $_compile_absolute;
 	/** Defaults */
@@ -26,7 +28,7 @@ class Template
 	protected $stack = array();
 	protected $filename;
 	protected $source;
-	protected $vars;
+	protected $vars = array();
 	protected $hooks = array(
 		Hook::POSITION_PRE => array(),
 		Hook::POSITION_POST => array()
@@ -85,7 +87,8 @@ class Template
 	{
 		$r = 0;
 		$this->_default_vars();
-		if (($path = $this->_find_path($filename))!==false) {
+		$path = $this->_find_path($filename);
+		if ($path !== false) {
 			$f_original = $path.$filename;
 			$f_compiled = $this->_compile_path($path).$filename;
 			if (file_exists($f_compiled)) {
@@ -110,7 +113,7 @@ class Template
 	{
 		$c = new Compiler;
 		$c->set_hooks($this->hooks);
-		return $c->compile($s,$d,array(&$this,"_find_path"),$this->_nocache);
+		return $c->compile($s,$d,array($this,"_find_path"),$this->_nocache);
 	}
 
 	/** Sets searchable template paths */

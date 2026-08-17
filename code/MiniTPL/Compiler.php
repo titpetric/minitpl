@@ -1,10 +1,10 @@
 <?php
 
-namespace Monotek\MiniTPL;
+namespace MiniTPL;
 
 /*
 
-Tit Petrič, Monotek d.o.o., (cc) tit.petric@monotek.net
+Tit Petric, (cc) black@titpetric.com
 http://creativecommons.org/licenses/by-sa/3.0/
 
 */
@@ -15,16 +15,13 @@ class Compiler
 	protected $hooks = array(
 		Hook::POSITION_PRE => array(),
 		Hook::POSITION_POST => array()
-	);    
-    
-	function __construct()
-	{
-		$this->_tag_php_open = "<"."?php";
-		$this->_tag_php_close = "?".">\n";
-		$this->_global_variables = array();
-		$this->_literals = array();
-	}
-    
+	);
+
+	public $_tag_php_open = "<"."?php";
+	public $_tag_php_close = "?".">\n";
+	public $_global_variables = array();
+	public $_literals = array();
+
 	function set_hooks($hooks)
 	{
 		$this->hooks = $hooks;
@@ -32,7 +29,8 @@ class Compiler
 
 	protected function load_contents($filename)
 	{
-		if (($contents = file_get_contents($filename)) !== false) {
+		$contents = file_get_contents($filename);
+		if ($contents !== false) {
 			if (substr($contents, 0, 3) == "\xEF\xBB\xBF") {
 				return substr($contents, 3);
 			}
@@ -44,11 +42,11 @@ class Compiler
 	function compile($filename, $output_filename, $find_path, $nocache)
 	{
 		$contents = $this->load_contents($filename);
-        
+
 		foreach ($this->hooks[Hook::POSITION_PRE] as $hook) {
 			$contents = $hook->execute($filename, $contents);
 		}
-        
+
 		$r = 0;
 		if ($contents!==false && $contents!=="") {
 			while (preg_match_all("/\{include\ (.*?)\}/s", $contents, $matches)) {
@@ -81,13 +79,14 @@ class Compiler
 				$contents = $this->_code('global '.implode(", ",$globals).';').$contents;
 			}
 			$contents = $this->_template_cleanup($contents);
-            
-            foreach ($this->hooks[Hook::POSITION_POST] as $hook) {
-    			$contents = $hook->execute($filename, $contents);
-    		}            
-            
+
+			foreach ($this->hooks[Hook::POSITION_POST] as $hook) {
+				$contents = $hook->execute($filename, $contents);
+			}
+
 			$this->_r_mkdir(dirname($output_filename));
-			if ($f = @fopen($output_filename,"w")) {
+			$f = @fopen($output_filename, "w");
+			if ($f) {
 				fwrite($f, $contents);
 				fclose($f);
 				$r = 1;
@@ -311,9 +310,12 @@ class Compiler
 		if (isset($variable) && !in_array($variable,$variables) && !in_array($variable,$objects)) {
 			$variables[] = $variable;
 		}
-		// globalize objects
+		// globalize objects. The isset() guard keeps this working on runtimes
+		// without a $GLOBALS superglobal (phpscript): there the object is simply
+		// treated as a template variable instead.
 		foreach ($objects as $object) {
-			if ($object!='$this' && is_object($GLOBALS[substr($object,1)])) {
+			$name = substr($object, 1);
+			if ($object!='$this' && isset($GLOBALS[$name]) && is_object($GLOBALS[$name])) {
 				$this->_global_variables[] = $object;
 			} else {
 				$variables[] = $object;
@@ -322,14 +324,14 @@ class Compiler
 
 		// closure to sort vars by length and alphabetically
 		usort($variables, function($a, $b) {
-					if (strlen($a)==strlen($b)) {
-						if ($a==$b) {
-							return 0;
-						}
-						return ($a<$b) ? 1 : -1;
-					}
-					return (strlen($a)<strlen($b)) ? 1 : -1;
-				} );
+			if (strlen($a)==strlen($b)) {
+				if ($a==$b) {
+					return 0;
+				}
+				return ($a<$b) ? 1 : -1;
+			}
+			return (strlen($a)<strlen($b)) ? 1 : -1;
+		} );
 
 		foreach ($variables as $var) {
 			if ($var != '$this') {

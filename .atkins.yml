@@ -1,0 +1,38 @@
+name: MiniTPL build and test
+
+vars:
+  sources: code test
+
+jobs:
+  default:
+    desc: "Build and test"
+    depends_on: [deps, lint, test]
+
+  deps:
+    desc: "Install composer dependencies"
+    steps:
+      - name: install
+        run: composer install --no-interaction --no-progress --quiet && echo "dependencies installed"
+
+  lint:
+    desc: "Validate composer.json and lint the sources"
+    passthru: true
+    steps:
+      - name: phpscript lint
+        run: phpscript lint ./code/...
+      - name: composer validate
+        run: composer validate --no-check-publish --quiet && echo "composer.json is valid"
+      - name: php -l
+        run: find ${{ sources }} -name '*.php' -print0 | xargs -0 -n1 php -l
+
+  test:
+    desc: "Run the phpunit test suite"
+    passthru: true
+    depends_on: [deps]
+    steps:
+      - phpunit
+
+  clean:
+    desc: "Remove build and test artifacts"
+    steps:
+      - rm -rf .phpunit.cache test/compile test/templates/test && echo "artifacts removed"

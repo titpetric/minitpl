@@ -1,135 +1,212 @@
 <?php
 
-class TemplateTest extends PHPUnit_Framework_TestCase
+declare(strict_types=1);
+
+namespace MiniTPL\Tests;
+
+use MiniTPL\Compiler;
+use MiniTPL\Template;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
+#[CoversClass(Template::class)]
+#[CoversClass(Compiler::class)]
+final class TemplateTest extends TestCase
 {
-	/**
-	 * @dataProvider compileProvider
-	 */
-	public function testCompile($template)
+	private const TEMPLATES = 'test/templates/';
+	private const TEMPLATES_BROKEN = 'test/templates2/';
+	private const COMPILE = 'test/compile/';
+	private const EXPECTED = 'test/compiled/';
+
+	/** Compiled output produced by {@see Template::load()} lands next to the templates. */
+	private const RUNTIME_COMPILE = self::TEMPLATES . 'test/';
+
+	protected function setUp(): void
 	{
-		global $tpl;
-
-		$destination = "test/compile/".$template;
-		$compiled = "test/compiled/".$template;
-
-		$tpl = new Monotek\MiniTPL\Template;
-
-		$tpl->set_paths("test/templates/");
-		$tpl->set_compile_location("test/compile/", false);
-		$tpl->add_default("key", "val");
-
-		$source = "test/templates/".$template;
-		$return = $tpl->compile($source, $destination);
-
-		$this->assertTrue((bool)$return);
-		$this->assertFileEquals($destination, $compiled);
+		self::rmdir(self::RUNTIME_COMPILE);
 	}
 
-	public function compileProvider()
+	protected function tearDown(): void
 	{
-		$tests = array();
-		$templates = glob("test/templates/*.tpl");
+		self::rmdir(self::RUNTIME_COMPILE);
+		unset($GLOBALS['tpl']);
+	}
+
+	#[DataProvider('compileProvider')]
+	public function testCompile(string $template): void
+	{
+		// 12_global_objects.tpl asserts that the compiler detects globals,
+		// so $tpl has to be a global object while compiling.
+		$GLOBALS['tpl'] = $tpl = $this->template();
+
+		$destination = self::COMPILE . $template;
+		$result = $tpl->compile(self::TEMPLATES . $template, $destination);
+
+		$this->assertSame(1, $result, 'compile() should report success');
+		$this->assertFileEquals(self::EXPECTED . $template, $destination);
+	}
+
+	/** @return iterable<string, array{string}> */
+	public static function compileProvider(): iterable
+	{
+		$templates = glob(__DIR__ . '/templates/*.tpl') ?: [];
 		sort($templates);
+
 		foreach ($templates as $template) {
-			$tests[] = array(basename($template));
+			$name = basename($template);
+			yield $name => [$name];
 		}
-		return $tests;
 	}
 
-	public function testRendering()
+	public function testRenderMatchesGet(): void
 	{
-		$tpl = new Monotek\MiniTPL\Template;
+		$tpl = $this->template();
+		$this->assertTrue($tpl->load('08_utf8_bom.tpl'));
 
-		$tpl->set_paths("test/templates/");
-		$tpl->set_compile_location("test/compile/", false);
-		$tpl->add_default("key", "val");
+		$this->assign($tpl);
 
-		$retval = array();
-		exec("rm -rf test/templates/test -rf", $retval);
-
-		$this->assertTrue($tpl->load("08_utf8_bom.tpl"));
-
-		touch("test/templates/test/compile/08_utf8_bom.tpl", filemtime("test/templates/08_utf8_bom.tpl") - 86400);
-
-		$this->assertTrue($tpl->load("08_utf8_bom.tpl"));
-
-		$items = array();
-		$items[] = array("id" => $i++);
-		$items[] = array("id" => $i++);
-		$items[] = array("id" => $i++);
-		$tpl->assign("items", $items);
-		$tpl->assign(array("foo"=>"bar", "d" => array("burger")), "foo");
-		$tpl->assign(".foo_foo", "baz");
-		$tpl->assign(".foo_d", array("steak", "beef", "pork", "chicken"));
-
-		$contents1 = $tpl->get();
+		$returned = $tpl->get();
 
 		ob_start();
 		$tpl->render();
-		$contents2 = ob_get_contents();
-		ob_end_clean();
+		$echoed = ob_get_clean();
 
-		$this->assertEquals($contents1, $contents2);
-
-		$this->assertFalse($tpl->_find_path("404.tpl"));
-
-		$tpl->set_compile_location("test/compile/", false);
-		$this->assertEquals("test/templates/test/compile/", $tpl->_compile_path("test/templates/"));
-		$tpl->set_compile_location("/test/compile/", true);
-		$this->assertEquals("/test/compile/test/templates/", $tpl->_compile_path("test/templates/"));
-
-		$retval = array();
-		exec("rm -rf test/templates/test -rf", $retval);
+		$this->assertNotSame('', $returned);
+		$this->assertSame($returned, $echoed);
 	}
 
-	public function testGetVar()
+	public function testStaleCompiledTemplateIsRecompiled(): void
 	{
-		$tpl = new Monotek\MiniTPL\Template;
-		$tpl->assign("foo", "bar");
-		$this->assertEquals("bar", $tpl->getVar("foo"));
+		$tpl = $this->template();
+		$this->assertTrue($tpl->load('08_utf8_bom.tpl'));
+
+		$compiled = self::RUNTIME_COMPILE . 'compile/08_utf8_bom.tpl';
+		$this->assertFileExists($compiled);
+
+		// Backdate the compiled file so the next load() has to recompile it.
+		touch($compiled, filemtime(self::TEMPLATES . '08_utf8_bom.tpl') - 86400);
+		$stale = filemtime($compiled);
+
+		$this->assertTrue($tpl->load('08_utf8_bom.tpl'));
+		clearstatcache(true, $compiled);
+		$this->assertGreaterThan($stale, filemtime($compiled));
+
+		$this->assign($tpl);
+		$this->assertNotSame('', $tpl->get());
 	}
 
-	public function testException()
+	public function testFindPathReturnsFalseForUnknownTemplate(): void
 	{
-		$this->setExpectedException("Exception");
-		$tpl = new Monotek\MiniTPL\Template;
-		$tpl->set_compile_location("test/compile/", false);
-		$tpl->set_paths("test/templates2/");
-		$tpl->load("fail_to_compile.tpl");
+		$this->assertFalse($this->template()->_find_path('404.tpl'));
 	}
 
-	/**
-	 * @dataProvider varsProvider
-	 */
-	public function testVars($expression, $expected, $description)
+	#[DataProvider('compileLocationProvider')]
+	public function testCompilePath(string $location, bool $absolute, string $expected): void
 	{
-		global $tpl;
-		$tpl = new Monotek\MiniTPL\Compiler;
+		$tpl = $this->template();
+		$tpl->set_compile_location($location, $absolute);
 
-		$result = $tpl->_split_exp($expression);
-		$this->assertEquals($expected, $result);
+		$this->assertSame($expected, $tpl->_compile_path(self::TEMPLATES));
 	}
 
-	public function testFailure()
+	/** @return iterable<string, array{string, bool, string}> */
+	public static function compileLocationProvider(): iterable
 	{
-		$this->setExpectedException("Exception");
-		$tpl = new Monotek\MiniTPL\Template;
-		$this->assertFalse($tpl->load("missing.tpl"));
+		yield 'relative' => ['test/compile/', false, 'test/templates/test/compile/'];
+		yield 'absolute' => ['/test/compile/', true, '/test/compile/test/templates/'];
+	}
+
+	public function testGetVar(): void
+	{
+		$tpl = new Template();
+		$tpl->assign('foo', 'bar');
+
+		$this->assertSame('bar', $tpl->getVar('foo'));
+		$this->assertFalse($tpl->getVar('missing'));
+	}
+
+	public function testLoadThrowsWhenTemplateCannotBeCompiled(): void
+	{
+		$tpl = new Template();
+		$tpl->set_compile_location(self::COMPILE, false);
+		$tpl->set_paths(self::TEMPLATES_BROKEN);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage("Template file 'fail_to_compile.tpl' doesn't exist!");
+
+		$tpl->load('fail_to_compile.tpl');
+	}
+
+	public function testRenderThrowsWhenNothingWasLoaded(): void
+	{
+		$tpl = new Template();
+
+		$this->assertFalse($tpl->load('missing.tpl'));
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage("Filename can't be empty, tried to render 'missing.tpl'");
+
 		$tpl->render();
 	}
 
-	public function varsProvider()
+	#[DataProvider('varsProvider')]
+	public function testSplitExpression(string $expression, string $expected, string $description): void
 	{
-		$vars = array();
-		$vars[] = array('news_section_news_list.tpl', 'news_section_news_list.tpl', "normal string");
-		$vars[] = array('$var', "\$_v['var']", "variable");
-		$vars[] = array('$var.netko', "\$_v['var']['netko']", "array index");
-		$vars[] = array('$var . "netko"', "\$_v['var'] . \"netko\"", "string concat");
-		$vars[] = array('$var1 . $var2', "\$_v['var1'] . \$_v['var2']", "variable concat");
-		$vars[] = array('$var1.$var2', "\$_v['var1'][\$_v['var2']]", "array var index");
-		$vars[] = array('$items.0', "\$_v['items']['0']", "array int index");
-		$vars[] = array('$tpl->get()', "\$tpl->get()", "global function");
-		$vars[] = array('$tplx->get()', "\$_v['tplx']->get()", "object function");
-		return $vars;
+		// $tpl is a global object, $tplx is not: the compiler treats them differently.
+		$GLOBALS['tpl'] = new Compiler();
+
+		$this->assertSame($expected, $GLOBALS['tpl']->_split_exp($expression), $description);
+	}
+
+	/** @return iterable<string, array{string, string, string}> */
+	public static function varsProvider(): iterable
+	{
+		yield 'normal string' => ['news_section_news_list.tpl', 'news_section_news_list.tpl', 'normal string'];
+		yield 'variable' => ['$var', "\$_v['var']", 'variable'];
+		yield 'array index' => ['$var.netko', "\$_v['var']['netko']", 'array index'];
+		yield 'string concat' => ['$var . "netko"', "\$_v['var'] . \"netko\"", 'string concat'];
+		yield 'variable concat' => ['$var1 . $var2', "\$_v['var1'] . \$_v['var2']", 'variable concat'];
+		yield 'array var index' => ['$var1.$var2', "\$_v['var1'][\$_v['var2']]", 'array var index'];
+		yield 'array int index' => ['$items.0', "\$_v['items']['0']", 'array int index'];
+		yield 'global function' => ['$tpl->get()', '$tpl->get()', 'global function'];
+		yield 'object function' => ['$tplx->get()', "\$_v['tplx']->get()", 'object function'];
+	}
+
+	/** A template configured against the test fixtures. */
+	private function template(): Template
+	{
+		$tpl = new Template();
+		$tpl->set_paths(self::TEMPLATES);
+		$tpl->set_compile_location(self::COMPILE, false);
+		$tpl->add_default('key', 'val');
+
+		return $tpl;
+	}
+
+	/** The variables the fixture templates expect. */
+	private function assign(Template $tpl): void
+	{
+		$tpl->assign('items', [['id' => 1], ['id' => 2], ['id' => 3]]);
+		$tpl->assign(['foo' => 'bar', 'd' => ['burger']], 'foo');
+		$tpl->assign('.foo_foo', 'baz');
+		$tpl->assign('.foo_d', ['steak', 'beef', 'pork', 'chicken']);
+	}
+
+	private static function rmdir(string $path): void
+	{
+		if (!is_dir($path)) {
+			return;
+		}
+
+		foreach (scandir($path) ?: [] as $entry) {
+			if ($entry === '.' || $entry === '..') {
+				continue;
+			}
+			$child = $path . '/' . $entry;
+			is_dir($child) ? self::rmdir($child) : unlink($child);
+		}
+
+		rmdir($path);
 	}
 }
