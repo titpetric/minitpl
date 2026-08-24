@@ -19,13 +19,13 @@ function add_it_up($array)
 }
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To use the above function in a template, just do `<?php echo add_it_up($_v['variable']);?>
+To use the above function in a template, just do `<?php echo htmlspecialchars(add_it_up($_v['variable']), ENT_QUOTES);?>
 `,
 which will loop trough all `$variable` items and add up the value of
 the size element and return the total sum of all sizes.
 
 ~~~~~~~~~~~~~~
-<?php echo htmlspecialchars($_v['variable'], ENT_QUOTES);echo strtoupper($_v['variable']);echo add_id_up($_v['variable']);?>
+<?php echo htmlspecialchars($_v['variable'], ENT_QUOTES);echo htmlspecialchars(strtoupper($_v['variable']), ENT_QUOTES);echo htmlspecialchars(add_id_up($_v['variable']), ENT_QUOTES);?>
 
 ~~~~~~~~~~~~~~
 

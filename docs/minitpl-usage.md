@@ -121,24 +121,15 @@ You can't pass additional parameters to modifiers. If you need to
 do that, then take a look at <a href="#advanced">advanced templating</a>,
 which will show you a way to embed php code inside a template.
 
-The modifier `escape` is a special template modifier, which
-gets replaced by a `htmlspecialchars($left, ENT_QUOTES);` call.
-It is used for escaping data, that might contain quotes or `<`, `>`.
-Here are a few examples of the correct use of the escape modifier.
-
-~~~~~~~~~~~~~~~
-<input type="title" type="text" value="{title|escape}"/>
-<textarea name="content">{content|escape}</textarea>
-<a href="{news.link}" title="{news.title|escape}">Read more ...</a>
-<h3>{site.title|escape}</h3>
-~~~~~~~~~~~~~~~
+Modifiers can be chained. They are applied left to right, so
+`{variable|tolower|add_it_up}` lowercases the value first and passes
+the result to `add_it_up`.
 
 Aditional template modifiers are `toupper` for `strtoupper` and
 `tolower` for `strtolower`. No additional functions are created
 for theese special modifiers.
 
 ~~~~~~~~~~~~~~
-{variable|escape}
 {variable|toupper}
 {variable|add_id_up}
 ~~~~~~~~~~~~~~
@@ -148,11 +139,73 @@ The above code gets compiled to:
 ~~~~~~~~~~~~~~
 <?php
 	$_v = &$this->vars;
-	echo htmlspecialchars($_v['variable'], ENT_QUOTES);
-	echo strtoupper($_v['variable']);
-	echo add_id_up($_v['variable']);
+	echo htmlspecialchars(strtoupper($_v['variable']), ENT_QUOTES);
+	echo htmlspecialchars(add_id_up($_v['variable']), ENT_QUOTES);
 ?>
 ~~~~~~~~~~~~~~
+
+The `htmlspecialchars` calls come from auto-escaping, described next.
+
+#### 1.3.1. Escaping
+
+Printed variables are escaped with `htmlspecialchars($value, ENT_QUOTES)`
+by default, so a value cannot inject markup or break out of an attribute.
+The compiler scans the template to decide this, and it distinguishes:
+
+| Context | Escaped |
+|---|---|
+| text node | yes |
+| open tag, quoted or unquoted attribute value | yes |
+| html comment | yes |
+| `<script>` and `<style>` body | no |
+
+Script and style bodies are left alone because they are not markup;
+escaping there would corrupt the javascript or css rather than protect it.
+
+None of the following needs a modifier:
+
+~~~~~~~~~~~~~~~
+<input type="text" value="{title}"/>
+<textarea name="content">{content}</textarea>
+<a href="{news.link}" title="{news.title}">Read more ...</a>
+<h3>{site.title}</h3>
+~~~~~~~~~~~~~~~
+
+A value that is already markup opts out with the `raw` modifier, or its
+`unescape` alias. The opt-out is per tag, so the same variable can be
+escaped in one place and raw in another.
+
+~~~~~~~~~~~~~~~
+<div class="body">{article.html|raw}</div>
+<div class="body">{article.html|unescape}</div>
+~~~~~~~~~~~~~~~
+
+The `escape` modifier still works and still compiles to a
+`htmlspecialchars($left, ENT_QUOTES)` call. It is now redundant in markup
+contexts, and useful to force escaping inside a `<script>` body.
+
+Escaping is the outermost step whatever order the modifiers came in, so
+`{variable|escape|toupper}` and `{variable|toupper|escape}` both compile to
+`htmlspecialchars(strtoupper(...), ENT_QUOTES)`.
+
+A template that is not markup - json, a plain text mail, a CSV - opts its
+whole body out with the `{*noescape*}` directive:
+
+~~~~~~~~~~~~~~~
+{*noescape*}
+{ldelim}"id": {id}, "title": {title|json_encode}{rdelim}
+~~~~~~~~~~~~~~~
+
+The same switch is available to the caller, for a whole `Template`
+instance:
+
+~~~~~~~~~~~~~~~
+$tpl = new MiniTPL\Template();
+$tpl->set_escape(false);
+~~~~~~~~~~~~~~~
+
+Auto-escaping changes compiled output, so compiled templates from before
+this feature have to be cleared once on upgrade.
 
 A common use for modifiers is outputting data for javascript,
 using the php function `json_encode`.
@@ -185,6 +238,26 @@ or just the name of the constant. Item `{_MY_CONSTANT}` will be
 used as a constant, because of those rules, however `{$_my_variable}`
 wouldnt be, since it starts with the variable identifier `$`.
 
+These are meant for interface language: `{_SAVE}`, `{_SUBMIT}`,
+`{_CANCEL}` and the rest of the short strings a template repeats on every
+page. The application defines them once, per locale:
+
+~~~~~~~~~~~
+define("_SAVE", "Save");
+define("_SUBMIT", "Submit");
+~~~~~~~~~~~
+
+The point of the rule is the compiled output. A constant becomes a plain
+`echo _SAVE;` with no `$_v` lookup, so a label costs nothing to render and
+nothing to assign - it never travels through the template variables at
+all. That is the whole reason the prefix exists.
+
+It is not a general way to reach php constants, and is not meant to become
+one. A name without the leading underscore is a variable, so `{APP_NAME}`
+reads `$_v['APP_NAME']` and `{PHP_EOL}` reads `$_v['PHP_EOL']`. Inside an
+expression the rule does not apply at all, because only variables are
+rewritten there: `{if APP_DEBUG}` compiles to `if(APP_DEBUG){`.
+
 ~~~~~~~~~~~
 {_MY_CONSTANT}
 {_this_is_also_a_constant}
@@ -196,10 +269,43 @@ The above code gets compiled to:
 ~~~~~~~~~~~
 <?php
 	$_v = &$this->vars;
-	echo _MY_CONSTANT;
-	echo _this_is_also_a_constant;
-	echo $_v['_my_variable'];
+	echo htmlspecialchars(_MY_CONSTANT, ENT_QUOTES);
+	echo htmlspecialchars(_this_is_also_a_constant, ENT_QUOTES);
+	echo htmlspecialchars($_v['_my_variable'], ENT_QUOTES);
 ?>
+~~~~~~~~~~~
+
+Interface language is exactly the sort of value that carries a quote. A
+label reused as an attribute would break the tag it sits in, so constants
+escape by context like any other value, and take the same modifiers:
+
+~~~~~~~~~~~
+<button title="{_SAVE}">{_SAVE}</button>
+<div>{_FOOTER_HTML|raw}</div>
+~~~~~~~~~~~
+
+With `_SAVE` defined as `L'enregistrer`, and again as `Save "as"`, that
+button renders as:
+
+~~~~~~~~~~~
+<button title="L&#039;enregistrer">L&#039;enregistrer</button>
+<button title="Save &quot;as&quot;">Save &quot;as&quot;</button>
+~~~~~~~~~~~
+
+An apostrophe in a translation is common enough that this is not a
+theoretical case, and it breaks a single-quoted attribute just as a double
+quote breaks a double-quoted one. `ENT_QUOTES` covers both.
+
+Constants are replaced earlier in the compile than variables, before the
+body of a `<script type="text/template">` or `<script type="text/x-jquery">`
+is set aside untouched. That is why a constant is still substituted in
+there while a variable is left as written:
+
+~~~~~~~~~~~
+<script type="text/template">
+	You can go {nuts} in here, no variables will be parsed.
+	Except for {_CONSTANTS}, those will work.
+</script>
 ~~~~~~~~~~~
 
 #### 1.6. Includes

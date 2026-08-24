@@ -1,4 +1,6 @@
 /composer.lock
-/test/compile
+/tests/compile
+/tests/composer.lock
+/tests/vendor
 /vendor
 /.phpunit.cache

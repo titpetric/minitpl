@@ -40,6 +40,26 @@ The classes live in the `MiniTPL` namespace: `MiniTPL\Template`,
 `MiniTPL\Compiler` and `MiniTPL\Hook`. `Compiler` and `Hook` are usable
 stand-alone; `Template` is the entrypoint you normally want.
 
+## Escaping
+
+Printed variables are escaped by default. The compiler scans the template
+to see where a variable lands, so `{title}` is escaped in a text node, in
+an attribute value and in a comment, and left alone inside a `<script>` or
+`<style>` body where html escaping would corrupt the code:
+
+```
+<a href="{news.link}" title="{news.title}">{news.title}</a>
+```
+
+A value that is already markup opts out per tag with `{content|raw}`, or
+its `{content|unescape}` alias. A whole template opts out with the
+`{*noescape*}` directive, and a whole `Template` instance with
+`$tpl->set_escape(false)`.
+
+This changes compiled output, so a cache written by an earlier version has
+to be cleared once on upgrade. See
+[docs/minitpl-usage.md](docs/minitpl-usage.md) for the full rules.
+
 ## phpscript
 
 The engine is kept compatible with

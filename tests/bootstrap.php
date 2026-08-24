@@ -10,4 +10,4 @@ chdir(dirname(__DIR__));
 
 require_once 'vendor/autoload.php';
 
-@mkdir('test/compile');
+@mkdir('tests/compile');
