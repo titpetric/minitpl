@@ -27,6 +27,7 @@ jobs:
       # TemplateTest.php, which phpscript cannot parse: it reads the PHPUnit
       # attributes above the class as a statement in a namespaced file.
       - name: phpscript lint
+        tty: true
         run: phpscript lint ./code/... tests/*.phpt
       - name: composer validate
         run: composer validate --no-check-publish --quiet && echo "composer.json is valid"
@@ -45,7 +46,8 @@ jobs:
       # and on the php binary.
       - name: phpscript test
         dir: tests
-        run: phpscript test --matrix ...
+        tty: true
+        run: phpscript test --matrix ./...
 
   clean:
     desc: "Remove build and test artifacts"
