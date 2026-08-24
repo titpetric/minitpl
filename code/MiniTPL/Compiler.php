@@ -12,6 +12,15 @@ http://creativecommons.org/licenses/by-sa/3.0/
 /** Template compiler class */
 class Compiler
 {
+	/** Markup contexts a template variable can be printed in */
+	const CONTEXT_TEXT = "text";
+	const CONTEXT_TAG = "tag";
+	const CONTEXT_ATTRIBUTE_DQ = "attribute_dq";
+	const CONTEXT_ATTRIBUTE_SQ = "attribute_sq";
+	const CONTEXT_COMMENT = "comment";
+	const CONTEXT_RAW = "raw";
+	const CONTEXT_PHP = "php";
+
 	protected $hooks = array(
 		Hook::POSITION_PRE => array(),
 		Hook::POSITION_POST => array()
@@ -22,9 +31,18 @@ class Compiler
 	public $_global_variables = array();
 	public $_literals = array();
 
+	/** Auto-escape printed variables unless the context or a modifier says otherwise */
+	public $_escape = true;
+
 	function set_hooks($hooks)
 	{
 		$this->hooks = $hooks;
+	}
+
+	/** Enable or disable auto-escaping for this compilation */
+	function set_escape($escape)
+	{
+		$this->_escape = $escape ? true : false;
 	}
 
 	protected function load_contents($filename)
@@ -69,6 +87,12 @@ class Compiler
 			}
 			$nocache = $nocache ? $this->_code("@unlink(__FILE__);") : "";
 			$contents = str_replace("{*nocache*}",$nocache,$contents);
+			// A template that isn't markup - json, plain text mail - opts out
+			// of auto-escaping for its whole body.
+			if (strpos($contents, "{*noescape*}")!==false) {
+				$this->_escape = false;
+				$contents = str_replace("{*noescape*}", "", $contents);
+			}
 			$contents = $this->_strip_comments($contents);
 			$contents = $this->_parse_constants($contents);
 			$contents = $this->_parse_functions($contents, $filename);
@@ -128,14 +152,13 @@ class Compiler
 	/** Replace constant definitions */
 	function _parse_constants($contents)
 	{
-		$matches = array();
-		if (preg_match_all("/\{(\_[a-zA-Z0-9\_]+)\}/", $contents, $matches)) {
-			$matches = array_unique($matches[1]);
-			foreach ($matches as $m) {
-				$contents = str_replace("{".$m."}", $this->_code("echo ".$m.";"), $contents);
-			}
-		}
-		return $contents;
+		return $this->_replace_tags($contents, true);
+	}
+
+	/** Whether a tag names a constant rather than a variable */
+	function _is_constant($v)
+	{
+		return preg_match("/^\_[a-zA-Z0-9\_]+$/", $v) == 1;
 	}
 
 	/** Search and replace for function blocks and inline definitions */
@@ -242,35 +265,238 @@ class Compiler
 	/** Parse variables */
 	function _parse_variables($contents)
 	{
-		$mycontent = preg_replace("/\<\?php.+\?\>/sU","",$contents);
+		return $this->_replace_tags($contents, false);
+	}
+
+	/**
+	 * Rewrite {tags} into php, escaping each by the markup context it sits in.
+	 *
+	 * $constants_only restricts the pass to {_CONSTANT} tags. Constants are
+	 * replaced earlier than variables, before <script type="text/template">
+	 * bodies are stashed, so they are still substituted inside a literal block
+	 * where a variable deliberately is not.
+	 */
+	function _replace_tags($contents, $constants_only)
+	{
+		$matches = array();
 		// [a-zA-Z\_\$\"\'\[\]\ ]
-		if (preg_match_all("/\{([^\{]+)\}/sU", $mycontent, $matches)) {
-			foreach ($matches[1] as $k=>$v) {
-				if (strstr($v,"\n")===false && $v[0]!=" ") {
-					if ($v[0]!='$' && !in_array($v[0], array("'",'"'))) {
-						// shorthand variables {v}
-						$v = '$'.$v;
-					}
-					$code = "";
-					if (strstr($v,"|")!==false) {
-						list($left,$right) = explode("|",$v);
-						$left = $this->_split_exp($left);
-						switch ($right) {
-							case "toupper": $right = "strtoupper"; break;
-							case "tolower": $right = "strtolower"; break;
-							case "escape": $code = "echo htmlspecialchars(".$left.", ENT_QUOTES);"; break;
-						}
-						if ($code=='') {
-							$code = "echo ".$right."(".$left.");";
-						}
-					} else {
-						$code = "echo ".$this->_split_exp($v).";";
-					}
-					$contents = str_replace($matches[0][$k], $this->_code($code), $contents);
-				}
+		if (!preg_match_all("/\{([^\{]+?)\}/s", $contents, $matches, PREG_OFFSET_CAPTURE)) {
+			return $contents;
+		}
+		$map = $this->_html_map($contents);
+		// Each tag is replaced where it stands, so two occurrences of the same
+		// name in different markup contexts escape differently. The output is
+		// assembled in one pass, which keeps the cost linear in the template
+		// size.
+		$output = "";
+		$copied = 0;
+		foreach ($matches[0] as $k=>$match) {
+			list($tag, $offset) = $match;
+			$v = $matches[1][$k][0];
+			if (strstr($v,"\n")!==false || $v[0]==" ") {
+				continue;
+			}
+			$context = $this->_context_at($map, $offset);
+			if ($context===self::CONTEXT_PHP) {
+				// generated code, not a template tag
+				continue;
+			}
+			$modifiers = explode("|", $v);
+			if ($constants_only && !$this->_is_constant($modifiers[0])) {
+				continue;
+			}
+			$output .= substr($contents, $copied, $offset-$copied);
+			$output .= $this->_code($this->_variable_code($v, $context));
+			$copied = $offset+strlen($tag);
+		}
+		return $output.substr($contents, $copied);
+	}
+
+	/** Build the php echo statement for a single {variable|modifier} tag */
+	function _variable_code($v, $context)
+	{
+		$modifiers = explode("|", $v);
+		$v = $modifiers[0];
+		if ($this->_is_constant($v)) {
+			// {_CONSTANT} echoes the php constant by name. Its value is whatever
+			// define() was given, so it escapes like any other value.
+			$code = $v;
+		} else {
+			if ($v[0]!='$' && !in_array($v[0], array("'",'"'))) {
+				// shorthand variables {v}
+				$v = '$'.$v;
+			}
+			$code = $this->_split_exp($v);
+		}
+		$escape = $this->_escape_context($context);
+		$count = count($modifiers);
+		// index 0 is the expression, the rest are modifiers in the order written
+		for ($i = 1; $i < $count; $i++) {
+			$modifier = $modifiers[$i];
+			switch ($modifier) {
+				case "raw":
+				case "unescape": $escape = false; break;
+				case "escape": $escape = true; break;
+				case "toupper": $code = "strtoupper(".$code.")"; break;
+				case "tolower": $code = "strtolower(".$code.")"; break;
+				default: $code = $modifier."(".$code.")";
 			}
 		}
-		return $contents;
+		if ($escape) {
+			// escaping is the outermost step, whatever order the modifiers came in
+			$code = "htmlspecialchars(".$code.", ENT_QUOTES)";
+		}
+		return "echo ".$code.";";
+	}
+
+	/** Whether a variable printed in this markup context is escaped by default */
+	function _escape_context($context)
+	{
+		if (!$this->_escape) {
+			return false;
+		}
+		// Script and style bodies are not markup. Escaping there would corrupt
+		// the javascript or css rather than protect it.
+		return $context !== self::CONTEXT_RAW;
+	}
+
+	/**
+	 * Scan the template and record where the markup context changes.
+	 *
+	 * The result is an ascending list of array($offset, $context) pairs, each
+	 * marking the first byte covered by that context.
+	 */
+	function _html_map($contents)
+	{
+		$map = array(array(0, self::CONTEXT_TEXT));
+		$state = self::CONTEXT_TEXT;
+		$resume = self::CONTEXT_TEXT;
+		$rawtag = "";
+		$matches = array();
+
+		// Every delimiter that can change the context, in document order. A
+		// {template tag} is matched too, so that quotes inside an expression
+		// are skipped whole rather than read as attribute delimiters.
+		if (!preg_match_all("/\{[^\{]+?\}|\<\?php|\?\>|\<!--|--\>|\<(\/?)([a-zA-Z][a-zA-Z0-9:_\-]*)|\>|\"|'/s", $contents, $matches, PREG_OFFSET_CAPTURE)) {
+			return $map;
+		}
+
+		foreach ($matches[0] as $k=>$match) {
+			list($token, $offset) = $match;
+			if (substr($token,0,1)=="{") {
+				continue;
+			}
+			switch ($state) {
+				case self::CONTEXT_PHP:
+					if ($token=="?".">") {
+						$state = $resume;
+						$map[] = array($offset+2, $state);
+					}
+					break;
+
+				case self::CONTEXT_COMMENT:
+					if ($token=="--".">") {
+						$state = self::CONTEXT_TEXT;
+						$map[] = array($offset+3, $state);
+					}
+					break;
+
+				case self::CONTEXT_RAW:
+					if ($token==$this->_tag_php_open) {
+						$resume = $state;
+						$state = self::CONTEXT_PHP;
+						$map[] = array($offset, $state);
+						break;
+					}
+					// only the matching close tag ends a script or style body
+					if ($matches[1][$k][0]=="/" && strtolower($matches[2][$k][0])==$rawtag) {
+						$rawtag = "";
+						$state = self::CONTEXT_TAG;
+						$map[] = array($offset, $state);
+					}
+					break;
+
+				case self::CONTEXT_ATTRIBUTE_DQ:
+				case self::CONTEXT_ATTRIBUTE_SQ:
+					if ($token==$this->_tag_php_open) {
+						$resume = $state;
+						$state = self::CONTEXT_PHP;
+						$map[] = array($offset, $state);
+						break;
+					}
+					$quote = ($state===self::CONTEXT_ATTRIBUTE_DQ) ? '"' : "'";
+					if ($token==$quote) {
+						$state = self::CONTEXT_TAG;
+						$map[] = array($offset, $state);
+					}
+					break;
+
+				case self::CONTEXT_TAG:
+					if ($token==$this->_tag_php_open) {
+						$resume = $state;
+						$state = self::CONTEXT_PHP;
+						$map[] = array($offset, $state);
+						break;
+					}
+					if ($token=='"' || $token=="'") {
+						$state = ($token=='"') ? self::CONTEXT_ATTRIBUTE_DQ : self::CONTEXT_ATTRIBUTE_SQ;
+						$map[] = array($offset+1, $state);
+						break;
+					}
+					if ($token==">") {
+						$state = ($rawtag!="") ? self::CONTEXT_RAW : self::CONTEXT_TEXT;
+						$map[] = array($offset+1, $state);
+					}
+					break;
+
+				default:
+					if ($token==$this->_tag_php_open) {
+						$resume = self::CONTEXT_TEXT;
+						$state = self::CONTEXT_PHP;
+						$map[] = array($offset, $state);
+						break;
+					}
+					if ($token=="<!--") {
+						$state = self::CONTEXT_COMMENT;
+						$map[] = array($offset, $state);
+						break;
+					}
+					if ($matches[2][$k][0]!=="") {
+						$tag = strtolower($matches[2][$k][0]);
+						// an opening script or style tag turns its body into
+						// raw text, which the closing > below switches to
+						$rawtag = ($matches[1][$k][0]!="/" && ($tag=="script" || $tag=="style")) ? $tag : "";
+						$state = self::CONTEXT_TAG;
+						$map[] = array($offset, $state);
+					}
+					break;
+			}
+		}
+		return $map;
+	}
+
+	/**
+	 * Look up the markup context covering an offset in a map from _html_map().
+	 *
+	 * The map is ascending, so this binary searches for the last breakpoint at
+	 * or before the offset. A template holds as many breakpoints as it does
+	 * markup, and every printed variable needs a lookup.
+	 */
+	function _context_at($map, $offset)
+	{
+		$context = self::CONTEXT_TEXT;
+		$low = 0;
+		$high = count($map)-1;
+		while ($low <= $high) {
+			$mid = (int)(($low+$high)/2);
+			if ($map[$mid][0] <= $offset) {
+				$context = $map[$mid][1];
+				$low = $mid+1;
+			} else {
+				$high = $mid-1;
+			}
+		}
+		return $context;
 	}
 
 	/** Split up variables from a php expression and replace them with actual variable locations */

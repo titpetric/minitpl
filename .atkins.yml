@@ -1,7 +1,7 @@
 name: MiniTPL build and test
 
 vars:
-  sources: code test
+  sources: code tests
 
 jobs:
   default:
@@ -13,13 +13,21 @@ jobs:
     steps:
       - name: install
         run: composer install --no-interaction --no-progress --quiet && echo "dependencies installed"
+      # The .phpt fixtures resolve minitpl through their own autoloader, so the
+      # tests directory is a composer project of its own.
+      - name: install fixtures
+        dir: tests
+        run: composer install --no-interaction --no-progress --quiet && echo "fixture dependencies installed"
 
   lint:
     desc: "Validate composer.json and lint the sources"
     passthru: true
     steps:
+      # The fixtures are linted by name. A bare ./tests/... would pull in
+      # TemplateTest.php, which phpscript cannot parse: it reads the PHPUnit
+      # attributes above the class as a statement in a namespaced file.
       - name: phpscript lint
-        run: phpscript lint ./code/...
+        run: phpscript lint ./code/... tests/*.phpt
       - name: composer validate
         run: composer validate --no-check-publish --quiet && echo "composer.json is valid"
       - name: php -l
@@ -32,10 +40,14 @@ jobs:
     steps:
       - name: phpunit
         run: phpunit
+      # Run from tests/ so a fixture reads and includes against the same root.
+      # The matrix holds every fixture to its expected output on both engines
+      # and on the php binary.
       - name: phpscript test
-        run: phpscript test ./...
+        dir: tests
+        run: phpscript test --matrix ...
 
   clean:
     desc: "Remove build and test artifacts"
     steps:
-      - rm -rf .phpunit.cache test/compile test/templates/test && echo "artifacts removed"
+      - rm -rf .phpunit.cache tests/compile tests/templates/tests && echo "artifacts removed"

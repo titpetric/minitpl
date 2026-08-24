@@ -5,7 +5,7 @@ Objects used by templates must be assigned like any other template
 variable. You can call their methods or access their properties.
 
 ~~~~~~~~~~~
-<?php echo $_v['memcache']->get();echo $_v['memcache']->variable;?>
+<?php echo htmlspecialchars($_v['memcache']->get(), ENT_QUOTES);echo htmlspecialchars($_v['memcache']->variable, ENT_QUOTES);?>
 
 ~~~~~~~~~~~
 

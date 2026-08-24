@@ -19,6 +19,8 @@ class Template
 	var $_paths;
 	/** Disable cache */
 	var $_nocache = false;
+	/** Auto-escape printed variables */
+	var $_escape = true;
 	/** Compile location, relative or absolute */
 	var $_compile_location, $_compile_absolute;
 	/** Defaults */
@@ -113,7 +115,14 @@ class Template
 	{
 		$c = new Compiler;
 		$c->set_hooks($this->hooks);
+		$c->set_escape($this->_escape);
 		return $c->compile($s,$d,array($this,"_find_path"),$this->_nocache);
+	}
+
+	/** Enable or disable auto-escaping of printed variables */
+	function set_escape($escape)
+	{
+		$this->_escape = $escape ? true : false;
 	}
 
 	/** Sets searchable template paths */
