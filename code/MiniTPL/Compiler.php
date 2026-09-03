@@ -108,11 +108,35 @@ class Compiler {
 			}
 
 			$this->_r_mkdir(dirname($output_filename));
-			$f = fopen($output_filename, "w");
+
+			// Written beside the target and renamed into place, never opened
+			// over it. fopen($output_filename, "w") truncates the file to zero
+			// before the first byte is written, so anything that include()s a
+			// compiled template while a compile is running reads an empty or
+			// half-written file - a page that renders its doctype and its head
+			// and then stops. rename(2) is atomic within a filesystem, so a
+			// reader sees either the previous complete file or the new one.
+			//
+			// Two concurrent renders of the same template are ordinary: a test
+			// suite running fixtures in parallel, or several server processes
+			// sharing one cache directory. The compile is idempotent, so the
+			// loser of the rename has written the same bytes as the winner.
+			//
+			// The temporary name carries the pid where one is available, so
+			// separate processes do not collide on the temporary itself.
+			$suffix = function_exists("posix_getpid") ? posix_getpid() : "tmp";
+			$tmp = $output_filename . "." . $suffix . ".tmp";
+
+			$f = fopen($tmp, "w");
 			if ($f) {
 				fwrite($f, $contents);
 				fclose($f);
-				$r = 1;
+
+				if (rename($tmp, $output_filename)) {
+					$r = 1;
+				} else {
+					unlink($tmp);
+				}
 			}
 		}
 

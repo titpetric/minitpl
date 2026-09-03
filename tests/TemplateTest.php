@@ -93,6 +93,44 @@ final class TemplateTest extends TestCase
 		$this->assertNotSame('', $tpl->get());
 	}
 
+	/**
+	 * A compile is never visible half-written.
+	 *
+	 * The compiled template is executed with include(), so a reader that
+	 * catches it mid-write executes a truncated program - a page that renders
+	 * its doctype and its head and then stops. That is what opening the target
+	 * with mode "w" allowed: the truncate lands before the first byte of the
+	 * new content.
+	 *
+	 * Two things are asserted. The target is never zero bytes after a compile,
+	 * and no temporary is left behind - a rename that failed would leave one,
+	 * and a caller would then be reading a stale file forever without knowing.
+	 */
+	public function testCompileIsNotVisibleHalfWritten(): void
+	{
+		$tpl = $this->template();
+		$this->assertTrue($tpl->load('08_utf8_bom.tpl'));
+
+		$compiled = self::RUNTIME_COMPILE . 'compile/08_utf8_bom.tpl';
+		$this->assertFileExists($compiled);
+		$this->assertGreaterThan(0, filesize($compiled));
+
+		$before = file_get_contents($compiled);
+
+		// Recompile over a file that already holds a complete program. Under
+		// the old write this truncated first; under the rename the previous
+		// content stays readable until the new one is complete.
+		touch($compiled, filemtime(self::TEMPLATES . '08_utf8_bom.tpl') - 86400);
+		$this->assertTrue($tpl->load('08_utf8_bom.tpl'));
+
+		clearstatcache(true, $compiled);
+		$this->assertGreaterThan(0, filesize($compiled), 'the compiled template was left empty');
+		$this->assertSame($before, file_get_contents($compiled), 'a recompile of an unchanged template changed its bytes');
+
+		$leftovers = glob(self::RUNTIME_COMPILE . 'compile/*.tmp');
+		$this->assertSame([], $leftovers, 'a temporary compile file was left behind');
+	}
+
 	public function testFindPathReturnsFalseForUnknownTemplate(): void
 	{
 		$this->assertFalse($this->template()->_find_path('404.tpl'));
