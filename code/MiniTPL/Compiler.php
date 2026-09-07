@@ -27,6 +27,9 @@ class Compiler {
 	public $_global_variables = array();
 	public $_literals = array();
 
+	/** Every partial {include} pasted into the template being compiled */
+	public $_includes = array();
+
 	/** Auto-escape printed variables unless the context or a modifier says otherwise */
 	public $_escape = true;
 
@@ -53,6 +56,7 @@ class Compiler {
 	/** Compile template file into php code */
 	function compile($filename, $output_filename, $find_path, $nocache) {
 		$contents = $this->load_contents($filename);
+		$this->_includes = array();
 
 		foreach ($this->hooks[Hook::POSITION_PRE] as $hook) {
 			$contents = $hook->execute($filename, $contents);
@@ -66,6 +70,7 @@ class Compiler {
 					$cn = "<!-- " . $file . " -->";
 					$fn = call_user_func($find_path, $file);
 					if ($fn !== false) {
+						$this->_includes[] = $fn . $file;
 						$cn = $this->load_contents($fn . $file);
 					}
 
@@ -105,6 +110,41 @@ class Compiler {
 
 			foreach ($this->hooks[Hook::POSITION_POST] as $hook) {
 				$contents = $hook->execute($filename, $contents);
+			}
+
+			// WHAT WAS PASTED IN, so the loader can see a partial change.
+			//
+			// {include} is a compile-time paste and the compiled file used to
+			// say nothing about where its text came from, so Template::load
+			// compared one mtime - the parent's - and editing a partial left
+			// every parent that includes it looking current. A deploy that
+			// only touched a partial shipped the previous markup, and the only
+			// way out was deleting the cache by hand.
+			//
+			// The manifest goes inside a php block, so a compiled template
+			// still emits exactly the bytes it did before: a closing tag
+			// swallows the newline that follows it. A template with no
+			// includes is given one at all, so only the files that actually
+			// paste something change shape.
+			//
+			// Nested includes come along for free: the loop above re-scans
+			// after each substitution, so a partial's own {include} is
+			// resolved in a later pass and recorded here with the rest.
+			if (!empty($this->_includes)) {
+				$manifest = array();
+				foreach (array_unique($this->_includes) as $include) {
+					// A path holding "*/" would end the comment early and
+					// leave a compiled file that will not parse. Legal on
+					// unix, never seen, and cheaper to drop than to debug:
+					// the worst it costs is the old behaviour, for that one.
+					if (strpos($include, "*/") === false) {
+						$manifest[] = $include;
+					}
+				}
+
+				if (!empty($manifest)) {
+					$contents = $this->_code("/* minitpl:includes\n" . implode("\n", $manifest) . "\n*/") . $contents;
+				}
 			}
 
 			$this->_r_mkdir(dirname($output_filename));

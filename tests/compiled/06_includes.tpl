@@ -1,3 +1,6 @@
+<?php /* minitpl:includes
+tests/templates/05_constants.tpl
+*/?>
 <?php $_v=&$this->vars;?>
 #### 1.6. Includes
 
