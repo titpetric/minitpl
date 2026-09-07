@@ -94,6 +94,87 @@ final class TemplateTest extends TestCase
 	}
 
 	/**
+	 * Editing a partial makes its parent stale.
+	 *
+	 * {include} is a compile-time paste, so the partial's text ends up inside
+	 * the parent's compiled file with nothing in the parent to show for it.
+	 * Comparing the parent's mtime to the compiled file answers "current"
+	 * however long ago the partial moved on, and the page keeps rendering the
+	 * old text until somebody deletes the cache by hand.
+	 *
+	 * The templates are written by the test rather than taken from the
+	 * fixtures, because the assertion is about one file changing while the
+	 * other does not - and a fixture's mtime belongs to whoever checked the
+	 * tree out.
+	 */
+	public function testEditingAPartialRecompilesItsParent(): void
+	{
+		$dir = self::RUNTIME_COMPILE . 'includes/';
+		mkdir($dir, 0777, true);
+
+		file_put_contents($dir . 'partial.tpl', "first\n");
+		file_put_contents($dir . 'parent.tpl', "{include partial.tpl}\n");
+
+		$this->assertStringContainsString('first', $this->renderParent($dir));
+
+		// ONLY THE PARTIAL CHANGES. The parent is not touched, which is the
+		// whole point. The future mtime is deliberate: a filesystem with
+		// one-second stamps would otherwise write both files inside the same
+		// tick and the comparison would have nothing to see.
+		file_put_contents($dir . 'partial.tpl', "second\n");
+		touch($dir . 'partial.tpl', time() + 5);
+		clearstatcache();
+
+		$this->assertStringContainsString(
+			'second',
+			$this->renderParent($dir),
+			'a partial changed and its parent still rendered the text it was compiled with'
+		);
+	}
+
+	/**
+	 * A partial that is deleted does not make its parent stale.
+	 *
+	 * The compiled file still holds the partial's text and still renders.
+	 * Recompiling would replace it with an html comment, which is a worse
+	 * answer than the one already on disk; the absence surfaces the next time
+	 * the parent itself changes, where it can be read and acted on.
+	 */
+	public function testDeletingAPartialLeavesTheParentAlone(): void
+	{
+		$dir = self::RUNTIME_COMPILE . 'deleted/';
+		mkdir($dir, 0777, true);
+
+		file_put_contents($dir . 'partial.tpl', "first\n");
+		file_put_contents($dir . 'parent.tpl', "{include partial.tpl}\n");
+
+		$this->assertStringContainsString('first', $this->renderParent($dir));
+
+		unlink($dir . 'partial.tpl');
+		clearstatcache();
+
+		$this->assertStringContainsString('first', $this->renderParent($dir));
+	}
+
+	/**
+	 * Load and render parent.tpl from one of this test's own directories.
+	 *
+	 * A fresh Template each time: the staleness question is asked by load(),
+	 * and an instance that already holds a compiled filename would not ask it
+	 * again.
+	 */
+	private function renderParent(string $dir): string
+	{
+		$tpl = new Template();
+		$tpl->set_paths($dir);
+		$tpl->set_compile_location(self::COMPILE, false);
+
+		$this->assertTrue($tpl->load('parent.tpl'));
+
+		return $tpl->get();
+	}
+
+	/**
 	 * A compile is never visible half-written.
 	 *
 	 * The compiled template is executed with include(), so a reader that

@@ -83,7 +83,7 @@ class Template {
 			$f_compiled = $this->_compile_path($path) . $filename;
 			if (file_exists($f_compiled)) {
 				$r = 1;
-				if (file_exists($f_original) && (filemtime($f_original) > filemtime($f_compiled))) {
+				if (file_exists($f_original) && $this->_is_stale($f_original, $f_compiled)) {
 					$r = $this->compile($f_original, $f_compiled);
 				}
 			} else {
@@ -98,6 +98,80 @@ class Template {
 
 		$this->source = $filename;
 		return (bool)$r;
+	}
+
+	/**
+	 * Whether a compiled template predates its own source, or any partial
+	 * that {include} pasted into it.
+	 *
+	 * The parent's mtime alone is not an answer. {include} is a compile-time
+	 * paste, so a partial's text lives inside the compiled file with nothing
+	 * in the parent to show for it - and comparing the two mtimes says
+	 * "current" however long ago the partial moved on. Compiler records what
+	 * it pasted; this reads that back and stats each one.
+	 */
+	function _is_stale($f_original, $f_compiled) {
+		$compiled_at = filemtime($f_compiled);
+		if (filemtime($f_original) > $compiled_at) {
+			return true;
+		}
+
+		foreach ($this->_compiled_includes($f_compiled) as $include) {
+			// A partial that has since been DELETED is not staleness. The
+			// compiled file still holds its text and still renders; the
+			// absence becomes an error the next time the parent itself
+			// changes, which is where it can be read and acted on.
+			if (file_exists($include) && filemtime($include) > $compiled_at) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * The partial paths Compiler wrote into the head of a compiled template.
+	 *
+	 * Read line by line rather than by a fixed number of bytes: the manifest
+	 * is as long as the template has includes, and a read that stopped short
+	 * would find no terminator, answer nothing, and quietly restore the very
+	 * behaviour this exists to remove. A file compiled before this shipped
+	 * has no manifest and answers nothing, which is correct - it is rewritten
+	 * the first time its own source changes.
+	 */
+	function _compiled_includes($f_compiled) {
+		$f = fopen($f_compiled, "r");
+		if ($f === false) {
+			return array();
+		}
+
+		$first = fgets($f);
+		if ($first === false || strpos($first, "minitpl:includes") === false) {
+			fclose($f);
+			return array();
+		}
+
+		$out = array();
+		while (true) {
+			$line = fgets($f);
+			if ($line === false) {
+				break;
+			}
+
+			$line = rtrim($line, "\r\n");
+			// The manifest closes with "*/" and the php tag on the same line.
+			if (substr($line, 0, 2) === "*/") {
+				break;
+			}
+
+			if ($line !== "") {
+				$out[] = $line;
+			}
+		}
+
+		fclose($f);
+
+		return $out;
 	}
 
 	/** Compile template */
