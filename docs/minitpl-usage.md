@@ -75,9 +75,9 @@ in curly braces like so: `{variable}`. Since variables are parsed
 on the last stage, prefixing variables with the dollar sign is
 optional. So, `{$variable}` is the same as `{variable}`.
 
-~~~~~~~~~~~~~
+```smarty
 {variable} is the same as {$variable}
-~~~~~~~~~~~~~
+```
 
 #### 1.2. Arrays
 
@@ -87,11 +87,11 @@ used for traversing into array depth like `{$array.items.0}`, or
 even variables starting with `$`, like `{$sections.$news_section.title}`.
 PHP syntax for arrays is also supported.
 
-~~~~~~~~~~~~
+```smarty
 {$array.items} is the same as {$array['items']}
 {$array.items.0} is the same as {$array['items'][0]}
 {$array.$items.0} is the same as {$array[$items][0]}
-~~~~~~~~~~~~
+```
 
 #### 1.3. Modifiers
 
@@ -100,7 +100,7 @@ Modifiers are PHP functions, which take one arbitrary value
 Some functions in PHP can be used as modifiers
 (strtoupper, ucfirst, str_rot13, strrev, count, ...).
 
-~~~~~~~~~~~~~~~~~~~~~~~~
+```php
 /** Custom modifier example */
 
 function add_it_up($array)
@@ -111,7 +111,7 @@ function add_it_up($array)
 	}
 	return $size;
 }
-~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 To use the above function in a template, just do `{$variable|add_it_up}`,
 which will loop trough all `$variable` items and add up the value of
@@ -129,20 +129,20 @@ Aditional template modifiers are `toupper` for `strtoupper` and
 `tolower` for `strtolower`. No additional functions are created
 for theese special modifiers.
 
-~~~~~~~~~~~~~~
+```smarty
 {variable|toupper}
 {variable|add_id_up}
-~~~~~~~~~~~~~~
+```
 
 The above code gets compiled to:
 
-~~~~~~~~~~~~~~
+```php
 <?php
 	$_v = &$this->vars;
 	echo htmlspecialchars(strtoupper($_v['variable']), ENT_QUOTES);
 	echo htmlspecialchars(add_id_up($_v['variable']), ENT_QUOTES);
 ?>
-~~~~~~~~~~~~~~
+```
 
 The `htmlspecialchars` calls come from auto-escaping, described next.
 
@@ -164,21 +164,21 @@ escaping there would corrupt the javascript or css rather than protect it.
 
 None of the following needs a modifier:
 
-~~~~~~~~~~~~~~~
+```smarty
 <input type="text" value="{title}"/>
 <textarea name="content">{content}</textarea>
 <a href="{news.link}" title="{news.title}">Read more ...</a>
 <h3>{site.title}</h3>
-~~~~~~~~~~~~~~~
+```
 
 A value that is already markup opts out with the `raw` modifier, or its
 `unescape` alias. The opt-out is per tag, so the same variable can be
 escaped in one place and raw in another.
 
-~~~~~~~~~~~~~~~
+```smarty
 <div class="body">{article.html|raw}</div>
 <div class="body">{article.html|unescape}</div>
-~~~~~~~~~~~~~~~
+```
 
 The `escape` modifier still works and still compiles to a
 `htmlspecialchars($left, ENT_QUOTES)` call. It is now redundant in markup
@@ -191,18 +191,18 @@ Escaping is the outermost step whatever order the modifiers came in, so
 A template that is not markup - json, a plain text mail, a CSV - opts its
 whole body out with the `{*noescape*}` directive:
 
-~~~~~~~~~~~~~~~
+```smarty
 {*noescape*}
 {ldelim}"id": {id}, "title": {title|json_encode}{rdelim}
-~~~~~~~~~~~~~~~
+```
 
 The same switch is available to the caller, for a whole `Template`
 instance:
 
-~~~~~~~~~~~~~~~
+```php
 $tpl = new MiniTPL\Template();
 $tpl->set_escape(false);
-~~~~~~~~~~~~~~~
+```
 
 Auto-escaping changes compiled output, so compiled templates from before
 this feature have to be cleared once on upgrade.
@@ -215,20 +215,20 @@ using the php function `json_encode`.
 Objects used by templates must be assigned like any other template
 variable. You can call their methods or access their properties.
 
-~~~~~~~~~~~
+```smarty
 {$memcache->get()}
 {$memcache->variable}
-~~~~~~~~~~~
+```
 
 Both objects are resolved from the template's assigned variables:
 
-~~~~~~~~~~~
+```php
 <?php
 	$_v = &$this->vars;
 	echo $_v['memcache']->get();
 	echo $_v['memcache']->variable;
 ?>
-~~~~~~~~~~~
+```
 
 #### 1.5. Constants
 
@@ -242,10 +242,10 @@ These are meant for interface language: `{_SAVE}`, `{_SUBMIT}`,
 `{_CANCEL}` and the rest of the short strings a template repeats on every
 page. The application defines them once, per locale:
 
-~~~~~~~~~~~
+```php
 define("_SAVE", "Save");
 define("_SUBMIT", "Submit");
-~~~~~~~~~~~
+```
 
 The point of the rule is the compiled output. A constant becomes a plain
 `echo _SAVE;` with no `$_v` lookup, so a label costs nothing to render and
@@ -258,39 +258,39 @@ reads `$_v['APP_NAME']` and `{PHP_EOL}` reads `$_v['PHP_EOL']`. Inside an
 expression the rule does not apply at all, because only variables are
 rewritten there: `{if APP_DEBUG}` compiles to `if(APP_DEBUG){`.
 
-~~~~~~~~~~~
+```smarty
 {_MY_CONSTANT}
 {_this_is_also_a_constant}
 {$_my_variable}
-~~~~~~~~~~~
+```
 
 The above code gets compiled to:
 
-~~~~~~~~~~~
+```php
 <?php
 	$_v = &$this->vars;
 	echo htmlspecialchars(_MY_CONSTANT, ENT_QUOTES);
 	echo htmlspecialchars(_this_is_also_a_constant, ENT_QUOTES);
 	echo htmlspecialchars($_v['_my_variable'], ENT_QUOTES);
 ?>
-~~~~~~~~~~~
+```
 
 Interface language is exactly the sort of value that carries a quote. A
 label reused as an attribute would break the tag it sits in, so constants
 escape by context like any other value, and take the same modifiers:
 
-~~~~~~~~~~~
+```smarty
 <button title="{_SAVE}">{_SAVE}</button>
 <div>{_FOOTER_HTML|raw}</div>
-~~~~~~~~~~~
+```
 
 With `_SAVE` defined as `L'enregistrer`, and again as `Save "as"`, that
 button renders as:
 
-~~~~~~~~~~~
+```html
 <button title="L&#039;enregistrer">L&#039;enregistrer</button>
 <button title="Save &quot;as&quot;">Save &quot;as&quot;</button>
-~~~~~~~~~~~
+```
 
 An apostrophe in a translation is common enough that this is not a
 theoretical case, and it breaks a single-quoted attribute just as a double
@@ -301,12 +301,12 @@ body of a `<script type="text/template">` or `<script type="text/x-jquery">`
 is set aside untouched. That is why a constant is still substituted in
 there while a variable is left as written:
 
-~~~~~~~~~~~
+```smarty
 <script type="text/template">
 	You can go {nuts} in here, no variables will be parsed.
 	Except for {_CONSTANTS}, those will work.
 </script>
-~~~~~~~~~~~
+```
 
 #### 1.6. Includes
 
@@ -318,7 +318,7 @@ updating the source template, so the timestamp is modified).
 
 There is no limit to the number of files you can include.
 
-~~~~~~~~~~~
+```smarty
 <html>
 <head>
 	<title>{$title}</title>
@@ -329,7 +329,7 @@ There is no limit to the number of files you can include.
 {include site_footer.tpl}
 </body>
 </html>
-~~~~~~~~~~~
+```
 
 If you need to include template files dynamically, you can use `{load}` to
 do this. This will solve some caching problems and enable you to use templates
@@ -338,7 +338,7 @@ based on what you pass to the main template as variables via `assign`.
 Keep in mind that with this you can't use the `inline` and `block` definitions
 outside the loaded template, but with `include` you can.
 
-~~~~~~~~~~~
+```smarty
 <html>
 <head>
 	<title>{$title}</title>
@@ -349,7 +349,7 @@ outside the loaded template, but with `include` you can.
 {load $dynamic_footer}
 </body>
 </html>
-~~~~~~~~~~~
+```
 
 
 #### 1.7. Comments
@@ -359,12 +359,12 @@ at compile time, and don't show up in the compiled code or in
 the template engine output. This is useful for extensive documentation
 if needed, since it doesn't give any overhead at run-time.
 
-~~~~~~~~~~~
+```smarty
 {* This is a comment that won't be shown anywhere,
    except in the source template, only to developers. *}
 
 Hello world!
-~~~~~~~~~~~
+```
 
 The above compiles to:
 
@@ -380,7 +380,7 @@ this isn't ideal for web designers that make templates, it
 is ideal for the majority of the PHP developers, since they
 don't need to learn a new language for templating.
 
-~~~~~~~~~~~~
+```smarty
 <html><body>
 {for $i=0; $i<count($array); $i++}
 	Hop number {i}<br/>
@@ -400,12 +400,12 @@ don't need to learn a new language for templating.
 	Well, k is {k}<br/>
 {/while}
 </body></html>
-~~~~~~~~~~~~
+```
 
 You see, this is very friendly for a PHP developer. Lets compare
 it to the original PHP code (two ways):
 
-~~~~~~~~~~~~
+```php
 echo '<html><body>';
 for ($i=0; $i<count($array); $i++) {
 	echo 'Hop number '.$i.'<br/>';
@@ -427,7 +427,7 @@ while ($k++ < 10) {
 	echo "Well, k is ".$k."<br/>";
 }
 echo '</body></html>';
-~~~~~~~~~~~~
+```
 
 While this example illustrates the similarity in syntax,
 it also shows how writing templates is actually less time
@@ -440,12 +440,12 @@ the code is practically identical for other statements,
 where you can mix the complete PHP syntax along with
 template features like the table addressing shorthand.
 
-~~~~~~~~~~~~~~~~~~~
+```smarty
 <p>{foreach $items.news as $newsitem}<b>-</b>{/foreach}</p>
 <p>{foreach $items['news'] as $newsitem}<b>+</b>{/foreach}</p>
 <p>{for $i=0; $i<count($items.news); $i++}<b>!</b>{/for}</p>
 <p>{for $i=0; $i<count($items.news)+count($items['news']); $i+=2}<b>?</b>{/for}</p>
-~~~~~~~~~~~~~~~~~~~
+```
 
 
 <h3 id="conditions">3. Conditions <a href="#top">Δ Jump to top</a></h3>
@@ -458,17 +458,17 @@ syntaxes can be used at the same time.
 
 #### 3.1. if statement
 
-~~~~~~~~~~~~~
+```smarty
 {if $is.admin && $user['name']=="black"}
         {* Hello black! Only you can edit things,
            but only as long as you stay an admin. *}
   ...
 {/if}
-~~~~~~~~~~~~~
+```
 
 #### 3.2. if/elseif/else statement
 
-~~~~~~~~~~~~~
+```smarty
 {if $is.admin && $user['name']=="black"}
         {* Hello black! Only you can edit things,
            but only as long as you stay an admin. *}
@@ -478,11 +478,11 @@ syntaxes can be used at the same time.
 {else}
 	{* You are a nobody and you earn nothing! *}
 {/if}
-~~~~~~~~~~~~~
+```
 
 #### 3.3. foreach/else statement
 
-~~~~~~~~~~~~~
+```smarty
 {foreach $newsitems.$section.items as $item}
 	<div class="newsitem">
 		<h3 class="title">{item.title}</h3>
@@ -493,7 +493,7 @@ syntaxes can be used at the same time.
 	No newsitems exist in the chosen section.
 	</div>
 {/if}
-~~~~~~~~~~~~~
+```
 
 #### 3.4. nocache
 
@@ -503,9 +503,9 @@ sometimes makes it hard to invalidate this cache, so for
 development purposes we have included a `nocache` directive.
 This erases your template cache after the file has been used once.
 
-~~~~~~~~~~~~
+```smarty
 {*nocache*}
-~~~~~~~~~~~~
+```
 
 This behaviour needs to be activated by setting `$tpl->_nocache` to `true`.
 
@@ -523,7 +523,7 @@ times.
 
 #### 4.1 block definition and usage
 
-~~~~~~~~~~~
+```smarty
 {block recurse}
 {if $i++ < 10}
         call {i}
@@ -532,11 +532,11 @@ times.
 {/block}
 
 {block:recurse}
-~~~~~~~~~~~
+```
 
 The compiled template will look something like this:
 
-~~~~~~~~~~~
+```php
 <?php
 
 /* This code has been cleaned up some, for
@@ -553,7 +553,7 @@ The compiled template will look something like this:
 	}
 	recurse_1213891842_673(&$_v);
 ?>
-~~~~~~~~~~~
+```
 
 As you can see, the block definition gets compiled into
 a function definition, which lives in the same variable space.
@@ -579,7 +579,7 @@ expensive, than copying the code around. The practical
 reason for this inside a template goes along the same
 train of thought.
 
-~~~~~~~~~~
+```smarty
 {inline newsitem}
 <div class="news">
 	<h3 class="title">{news.title}</h3>
@@ -594,7 +594,7 @@ train of thought.
 <div class="other_news">
 {foreach $newsitems.$section.items as $news}{inline:newsitem}{/foreach}
 </div>
-~~~~~~~~~~
+```
 
 Usage of `inline` definition decreases template size before
 compilation, and helps with design standardisation. Same page
@@ -619,7 +619,7 @@ template variables. For example, if you want to build
 a table with alternating css styles on rows, you would
 do something like this:
 
-~~~~~~~~~~~~~
+```smarty
 {eval $style="even";}
 <table>
 {foreach $rows as $row}
@@ -629,7 +629,7 @@ do something like this:
 </tr>
 {/foreach}
 </table>
-~~~~~~~~~~~~~
+```
 
 All variables when using the `eval` construct, are
 mapped to local template variables.
@@ -646,15 +646,15 @@ When you need to execute more complex code, you can use the
 meaning it is kept as-is. Assigned variables remain available through
 the internal `$_v` array.
 
-~~~~~~~~~~~
+```smarty
 {eval_literal
 	$_v['menu_data'] =
 		$_v['cms_module']->get_menu("branch", array("item","menu")); }
-~~~~~~~~~~~
+```
 
 #### 5.3 php
 
-~~~~~~~~~~~~~~~
+```smarty
 {php}
 function mygettime()
 {
@@ -664,11 +664,11 @@ $mygettime = mygettime();
 {/php}
 
 {mygettime|var_dump}
-~~~~~~~~~~~~~~~
+```
 
 The above code gets compiled into:
 
-~~~~~~~~~
+```php
 <?php
 	$_v = &$this->vars;
 
@@ -681,7 +681,7 @@ The above code gets compiled into:
 
 	echo var_dump($_v['mygettime']);
 ?>
-~~~~~~~~~
+```
 
 This is by far the least used construct and also least tested.
 If you want to build objects or functions or use a lot of PHP
@@ -737,7 +737,7 @@ for each key.
 If the first parameter is a string, the second parameter will be
 assigned as it's value. The second parameter can be any PHP type.
 
-~~~~~~~~
+```php
 $data = array(); // some example data
 $data['title'] = "Leno promises smooth transition to O'Brien";
 $data['content'] = "For months, Fallon has been widely considered
@@ -760,7 +760,7 @@ $tpl->assign($data, "news");
    You can output the fields with {news.title} and {news.content} */
 
 $tpl->assign("news", $data);
-~~~~~~~~
+```
 
 ##### 6.3. render and get
 
@@ -784,7 +784,7 @@ This is useful if you have multiple template locations, which
 are overridable. For example, you can have the following CMS
 structure.
 
-~~~~~~~~~~~~~~~
+```php
 $paths = array();
 
 /* This is the most important location, everything
@@ -805,7 +805,7 @@ $paths[] = "modules/".$module_name."/templates/";
 $paths[] = "include/templates/";
 
 $tpl->set_paths($paths);
-~~~~~~~~~~~~~~~
+```
 
 Templating constructs like `{include}` are affected by the path
 settings. The included templates use the same paths in the same
@@ -813,9 +813,9 @@ order, until a needed template is found.
 
 The following syntax is also allowed since 2012/05/24:
 
-~~~~~~~~~~~~~~~
+```php
 $tpl->set_paths("theme/templates/","modules/".$module_name."/templates/","include/templates/");
-~~~~~~~~~~~~~~~
+```
 
 ##### 6.5. $this->set_compile_location( [ $compile_location = "cache/" [ , $is_absolute = false ] ] );
 
@@ -828,9 +828,9 @@ You can modify this behavior with the `set_compile_location` function.
 You can set the cache location to a common folder, and mark it as
 an absolute location (as opposed to the default, relative path).
 
-~~~~~~~~~~~~~~~
+```php
 $tpl->set_compile_location("/tmp/minitpl", true);
-~~~~~~~~~~~~~~~
+```
 
 The example will store all your templates under `/tmp/minitpl`. This
 location needs to be writable. The compiled files under the location
@@ -844,10 +844,10 @@ If you have a template named `site.tpl` under two distinct locations like
 the conflict is resolved by creating the following structure in the
 cache location:
 
-~~~~~~~~~~~~~~~
+```text
 /tmp/minitpl/theme/templates/site.tpl
 /tmp/minitpl/theme/issue2012/templates/site.tpl
-~~~~~~~~~~~~~~~
+```
 
 This can let you change your source folders with `set_paths~ and and the
 same time only have one cache location for all your templates. When

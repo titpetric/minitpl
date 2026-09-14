@@ -15,7 +15,7 @@ one of the smallest full featured template engines for PHP to date.
 MiniTPL is available on [packagist as titpetric/minitpl](https://packagist.org/packages/titpetric/minitpl).
 
 To start using MiniTPL in your project with [composer](http://getcomposer.org/), create a composer.json file:
-```
+```json
 {
     "require": {
         "titpetric/minitpl": ">=1.0"
@@ -25,7 +25,7 @@ To start using MiniTPL in your project with [composer](http://getcomposer.org/),
 
 And run `composer install`. You can start using MiniTPL right away.
 
-```
+```php
 <?php
 
 include("vendor/autoload.php");
@@ -47,7 +47,7 @@ to see where a variable lands, so `{title}` is escaped in a text node, in
 an attribute value and in a comment, and left alone inside a `<script>` or
 `<style>` body where html escaping would corrupt the code:
 
-```
+```smarty
 <a href="{news.link}" title="{news.title}">{news.title}</a>
 ```
 
@@ -67,7 +67,7 @@ The engine is kept compatible with
 in Go. phpscript resolves `composer.json` and the `vendor/` directory on its
 own, so the same `vendor/autoload.php` include works there:
 
-```
+```sh
 phpscript example.php
 ```
 
