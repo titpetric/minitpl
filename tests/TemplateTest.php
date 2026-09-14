@@ -1,5 +1,9 @@
 <?php
 
+// This suite runs under phpunit on the php binary only. It is not linted or
+// executed by phpscript, so PHP syntax phpscript cannot parse (keyed yield)
+// is fine here; atkins.yml lints tests by fixture name for the same reason.
+
 declare(strict_types=1);
 
 namespace MiniTPL\Tests;
