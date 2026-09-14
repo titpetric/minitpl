@@ -4,8 +4,7 @@ namespace MiniTPL;
 
 /*
 
-Tit Petric, (cc) black@titpetric.com
-http://creativecommons.org/licenses/by-sa/3.0/
+Tit Petric <black@titpetric.com>, MIT license, see LICENSE.
 
  */
 

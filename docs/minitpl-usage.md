@@ -19,8 +19,7 @@ The total code is 13.5KB and is propperly indented, contains
 minimal commenting and perfectly readable with all white space
 left in tact.
 
-The code falls under the [Creative Commons Attribution -
-Share Alike](http://creativecommons.org/licenses/by-sa/3.0/) license.
+The code falls under the MIT license, see LICENSE.
 
 Installation and Requirement
 ----------------------------
