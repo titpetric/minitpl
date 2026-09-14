@@ -52,6 +52,7 @@ template system will help you a long way.
 4. <a href="#blocks">Block and Inline definitions</a>
 5. <a href="#advanced">Advanced, embedding php code</a>
 6. <a href="#php">PHP usage reference</a>
+7. <a href="#hooks">Hooks</a>
 
 ----------------------------------------------------------
 
@@ -704,7 +705,8 @@ For basic usage, you need to include the file `class.template.php`.
 The functions used include `class.template_compiler.php` if needed.
 The following methods are exported:
 
-`load`, `assign`, `render`, `get`, `set_paths`, `set_compile_location`, `compile`
+`load`, `assign`, `render`, `get`, `set_paths`, `set_compile_location`, `compile`,
+`add_hook`, `clear_hooks`
 
 You will probablly only use the first four methods unless you
 want to change the default paths, where the system is searching for
@@ -852,3 +854,46 @@ This can let you change your source folders with `set_paths~ and and the
 same time only have one cache location for all your templates. When
 you want to expunge any stale cache files or use minitpl in a more complex
 system, this is a much simpler approach for cache management.
+
+<h3 id="hooks">7. Hooks <a href="#top">Δ Jump to top</a></h3>
+
+Hooks rewrite template source around compilation. A hook implements
+the `MiniTPL\Hook` interface:
+
+```php
+use MiniTPL\Hook;
+
+class TrimHook implements Hook
+{
+	function execute($filename, $contents)
+	{
+		return trim($contents);
+	}
+}
+```
+
+`execute` receives the template filename and the template contents,
+and returns the new contents.
+
+##### 7.1. add_hook ( Hook $hook, string $position )
+
+Registers a hook on the template. The position is one of the two
+`Hook` interface constants:
+
+| Position | Runs |
+|---|---|
+| `Hook::POSITION_PRE` | before compilation, on the template source |
+| `Hook::POSITION_POST` | after compilation, on the generated php |
+
+```php
+$tpl = new MiniTPL\Template();
+$tpl->add_hook(new TrimHook(), Hook::POSITION_PRE);
+```
+
+Hooks at the same position run in the order they were added. They
+apply at compile time, so a template already in the compile cache is
+not affected until it recompiles.
+
+##### 7.2. clear_hooks ( )
+
+Removes every registered hook from the template.

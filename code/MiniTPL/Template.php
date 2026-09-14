@@ -55,7 +55,7 @@ class Template {
 		}
 	}
 
-	function add_hook($hook, $position) {
+	function add_hook(Hook $hook, string $position) {
 		$this->hooks[$position][] = $hook;
 	}
 

@@ -26,9 +26,11 @@ jobs:
       # The fixtures are linted by name. A bare ./tests/... would pull in
       # TemplateTest.php, which phpscript cannot parse: it reads the PHPUnit
       # attributes above the class as a statement in a namespaced file.
+      # --include registers the composer autoloader's classmap, so MiniTPL
+      # classes resolve across files instead of warning as undefined.
       - name: phpscript lint
         tty: true
-        run: phpscript lint ./code/... tests/*.phpt
+        run: phpscript lint --include vendor/autoload.php ./code/... tests/*.phpt
       - name: composer validate
         run: composer validate --no-check-publish --quiet && echo "composer.json is valid"
       - name: php -l

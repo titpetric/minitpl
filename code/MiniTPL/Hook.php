@@ -2,9 +2,9 @@
 
 namespace MiniTPL;
 
-abstract class Hook {
+interface Hook {
 	const POSITION_PRE = "pre";
 	const POSITION_POST = "post";
 
-	abstract function execute($filename, $contents);
+	function execute($filename, $contents);
 }
