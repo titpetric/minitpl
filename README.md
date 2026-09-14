@@ -14,16 +14,13 @@ one of the smallest full featured template engines for PHP to date.
 
 MiniTPL is available on [packagist as titpetric/minitpl](https://packagist.org/packages/titpetric/minitpl).
 
-To start using MiniTPL in your project with [composer](http://getcomposer.org/), create a composer.json file:
-```json
-{
-    "require": {
-        "titpetric/minitpl": ">=1.0"
-    }
-}
+To start using MiniTPL in your project with [composer](http://getcomposer.org/):
+
+```sh
+composer require titpetric/minitpl:^1.3
 ```
 
-And run `composer install`. You can start using MiniTPL right away.
+You can start using MiniTPL right away.
 
 ```php
 <?php
