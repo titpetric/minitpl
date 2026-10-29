@@ -947,7 +947,7 @@ minitpl render templates/page.tpl data.yml
 cat data.yml | minitpl render templates/page.tpl
 ```
 
-The yaml reader covers the subset of yaml that template data uses:
-mappings, sequences, quoted and plain scalars, inline `[lists]` and
-`{maps}`, and `|` and `>` block scalars. Anchors, aliases, tags and
-documents after the first `---` are not supported.
+The data is decoded by the runtime, not by the command line: phpscript
+registers `yaml_decode()`, which `phpscript list --bindings` lists, and
+the command uses it. A runtime without the yaml binding decodes json
+instead, so a `minitpl` run under plain php reads json data.

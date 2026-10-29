@@ -157,7 +157,7 @@ final class CliTest extends TestCase
 		);
 
 		$this->assertSame(1, $status);
-		$this->assertStringContainsString('yaml: line 1: unterminated flow collection', $stderr);
+		$this->assertStringContainsString('unable to parse template data', $stderr);
 	}
 
 	public function testRenderRejectsDataThatIsNotAMapping(): void

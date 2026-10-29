@@ -73,10 +73,10 @@ against it, and writes each template beside it: `templates/` compiles into
 errors.
 
 `render` reads a yaml mapping into template variables and prints the result
-to standard output. The reader covers the subset of yaml that template data
-uses: mappings, sequences, quoted and plain scalars, inline `[lists]` and
-`{maps}`, and `|` / `>` block scalars. Anchors, aliases and tags are not
-supported.
+to standard output. The yaml comes from the binding the runtime registers,
+`yaml_decode()`, listed by `phpscript list --bindings`; a runtime without
+that binding decodes json instead. The command line carries no reader of
+its own.
 
 ## Escaping
 

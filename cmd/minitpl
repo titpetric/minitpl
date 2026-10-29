@@ -19,7 +19,6 @@
 
 use MiniTPL\Compiler;
 use MiniTPL\Template;
-use MiniTPL\Yaml;
 
 $root = dirname(dirname(__DIR__));
 require $root . "/vendor/autoload.php";
@@ -153,11 +152,16 @@ function command_render($args) {
 
 	$data = array();
 	if ($data_file !== null && $data_file !== "-") {
-		$data = Yaml::parse_file($data_file);
+		$yaml = @file_get_contents($data_file);
+		if ($yaml === false) {
+			throw new \RuntimeException("Unable to read yaml file '" . $data_file . "'");
+		}
+
+		$data = parse_data($yaml);
 	} elseif ($data_file === "-" || !stdin_is_tty()) {
 		$yaml = stream_get_contents(STDIN);
 		if ($yaml !== false && trim($yaml) !== "") {
-			$data = Yaml::parse($yaml);
+			$data = parse_data($yaml);
 		}
 	}
 
@@ -185,6 +189,24 @@ function command_render($args) {
 	$tpl->assign($data);
 	$tpl->render();
 	return 0;
+}
+
+/**
+ * Template data from a document, through the bindings of the runtime.
+ *
+ * phpscript registers yaml_decode(); `phpscript list --bindings` names it.
+ * A runtime without the yaml binding decodes json instead.
+ */
+function parse_data($text) {
+	try {
+		if (function_exists("yaml_decode")) {
+			return yaml_decode($text);
+		}
+
+		return json_decode($text, true);
+	} catch (\Error $e) {
+		throw new \RuntimeException("unable to parse template data: " . $e->getMessage());
+	}
 }
 
 /** Split arguments into options and positional values */
@@ -323,6 +345,9 @@ function main($argv) {
 try {
 	$status = main($argv);
 } catch (\Exception $e) {
+	fwrite(STDERR, "minitpl: " . $e->getMessage() . "\n");
+	$status = 1;
+} catch (\Error $e) {
 	fwrite(STDERR, "minitpl: " . $e->getMessage() . "\n");
 	$status = 1;
 }
