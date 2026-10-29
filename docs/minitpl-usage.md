@@ -33,10 +33,12 @@ Depending on the folder location where you use the template object,
 it will need the following folders:
 
 > templates/<br/>
-> templates/cache/ <span class="red">*</span>
+> templates_c/ <span class="red">*</span>
 
 Since this templating system is a compiling template system,
-you will need a writable cache directory.
+you will need a writable compile directory. By default the compiled
+templates are stored in a `templates_c/` directory next to the
+`templates/` directory, and it is created when missing.
 
 
 Language reference
@@ -818,12 +820,14 @@ The following syntax is also allowed since 2012/05/24:
 $tpl->set_paths("theme/templates/","modules/".$module_name."/templates/","include/templates/");
 ```
 
-##### 6.5. $this->set_compile_location( [ $compile_location = "cache/" [ , $is_absolute = false ] ] );
+##### 6.5. $this->set_compile_location( [ $compile_location [ , $is_absolute = false ] ] );
 
 By default the compile location of the templates is relative to the
-source template folder. So, with the template locations listed above,
-you would need a `cache/` folder under every location, to store the compiled
-template files for later use.
+source template folder, in a directory beside it with `_c` appended:
+a search path of `templates/` compiles into `templates_c/`, and
+`theme/templates/` into `theme/templates_c/`. The directory is created
+when it is missing and only has to be writable, so the default paths
+need no configuration.
 
 You can modify this behavior with the `set_compile_location` function.
 You can set the cache location to a common folder, and mark it as
@@ -854,6 +858,10 @@ This can let you change your source folders with `set_paths~ and and the
 same time only have one cache location for all your templates. When
 you want to expunge any stale cache files or use minitpl in a more complex
 system, this is a much simpler approach for cache management.
+
+Earlier versions compiled into a `cache/` directory inside every template
+folder. The default location moved to the adjacent `templates_c/`, so a
+cache written by an older version has to be removed once on upgrade.
 
 <h3 id="hooks">7. Hooks <a href="#top">Δ Jump to top</a></h3>
 
@@ -897,3 +905,42 @@ not affected until it recompiles.
 ##### 7.2. clear_hooks ( )
 
 Removes every registered hook from the template.
+
+<h3 id="cli">8. Command line <a href="#top">Δ Jump to top</a></h3>
+
+The `cmd/minitpl` script compiles and renders templates from the shell,
+for builds and for trying a template out. With composer it is installed
+as `vendor/bin/minitpl`; in a checkout of the repository it is
+`cmd/minitpl`.
+
+##### 8.1. compile
+
+`minitpl compile [templates_dir] [output_dir]` transpiles every `.tpl`
+file under `templates_dir` (default: `templates`). Subdirectories keep
+their names, `{include}` is resolved against `templates_dir`, and the
+output goes to `output_dir`, which defaults to the `templates_c/`
+directory beside the source. `-o DIR` names it explicitly, `-q` prints
+nothing but errors.
+
+```sh
+minitpl compile templates
+minitpl compile -o build templates
+```
+
+##### 8.2. render
+
+`minitpl render <template.tpl> [data.yml]` renders a template and writes
+the result to standard output. The template variables come from a yaml
+mapping, read from the data file or, when it is omitted, from standard
+input; pass `-` to read standard input explicitly. Rendering compiles
+the template when needed, into the `templates_c/` directory beside it.
+
+```sh
+minitpl render templates/page.tpl data.yml
+cat data.yml | minitpl render templates/page.tpl
+```
+
+The yaml reader covers the subset of yaml that template data uses:
+mappings, sequences, quoted and plain scalars, inline `[lists]` and
+`{maps}`, and `|` and `>` block scalars. Anchors, aliases, tags and
+documents after the first `---` are not supported.

@@ -37,6 +37,38 @@ The classes live in the `MiniTPL` namespace: `MiniTPL\Template`,
 `MiniTPL\Compiler` and `MiniTPL\Hook`. `Compiler` and `Hook` are usable
 stand-alone; `Template` is the entrypoint you normally want.
 
+Compiled templates are written to a `templates_c/` directory next to the
+`templates/` directory, so the default `Template` needs a writable project
+directory and no configuration. `set_compile_location()` moves them.
+
+## Command line
+
+`cmd/minitpl` compiles and renders templates without a php script of your
+own. When the package is installed with composer, the command is
+`vendor/bin/minitpl`; in a checkout it is `cmd/minitpl`.
+
+```sh
+# transpile every template under templates/ into templates_c/
+vendor/bin/minitpl compile templates
+
+# render a template with data from a yaml file
+vendor/bin/minitpl render templates/page.tpl data.yml
+
+# the same, with the data piped in on standard input
+cat data.yml | vendor/bin/minitpl render templates/page.tpl
+```
+
+`compile` keeps the directory structure of the source, resolves `{include}`
+against it, and writes each template beside it: `templates/` compiles into
+`templates_c/`. `-o DIR` writes elsewhere and `-q` prints nothing but
+errors.
+
+`render` reads a yaml mapping into template variables and prints the result
+to standard output. The reader covers the subset of yaml that template data
+uses: mappings, sequences, quoted and plain scalars, inline `[lists]` and
+`{maps}`, and `|` / `>` block scalars. Anchors, aliases and tags are not
+supported.
+
 ## Escaping
 
 Printed variables are escaped by default. The compiler scans the template

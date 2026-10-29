@@ -33,8 +33,9 @@ jobs:
         run: phpscript lint --include vendor/autoload.php ./code/... tests/*.phpt
       - name: composer validate
         run: composer validate --no-check-publish --quiet && echo "composer.json is valid"
+      # The command line has no .php suffix, so the find above misses it.
       - name: php -l
-        run: find ${{ sources }} -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: find ${{ sources }} -name '*.php' -print0 | xargs -0 -n1 php -l && php -l cmd/minitpl
 
   test:
     desc: "Run the phpunit test suite"

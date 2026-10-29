@@ -156,6 +156,19 @@ final class TemplateTest extends TestCase
 		yield 'absolute' => ['/tests/compile/', true, '/tests/compile/tests/templates/'];
 	}
 
+	/**
+	 * Without a call to set_compile_location(), the compiled templates are
+	 * stored beside the source templates, in a "<dir>_c" directory.
+	 */
+	public function testCompileLocationDefaultsToAdjacentTemplatesC(): void
+	{
+		$tpl = new Template();
+
+		$this->assertSame('templates_c/', $tpl->_compile_path('templates/'));
+		$this->assertSame('theme/templates_c/', $tpl->_compile_path('theme/templates/'));
+		$this->assertSame('templates_c/', $tpl->_compile_path('./'));
+	}
+
 	public function testGetVar(): void
 	{
 		$tpl = new Template();

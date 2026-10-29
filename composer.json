@@ -20,6 +20,8 @@
 
   "type": "library",
 
+  "bin": ["cmd/minitpl"],
+
   "require": {
       "php": ">=5.6.0"
   },
