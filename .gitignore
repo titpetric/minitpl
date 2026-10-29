@@ -4,3 +4,4 @@
 /tests/vendor
 /vendor
 /.phpunit.cache
+/.cli-tmp-*

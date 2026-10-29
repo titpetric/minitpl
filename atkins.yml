@@ -55,4 +55,4 @@ jobs:
   clean:
     desc: "Remove build and test artifacts"
     steps:
-      - rm -rf .phpunit.cache tests/compile tests/templates/tests && echo "artifacts removed"
+      - rm -rf .phpunit.cache .cli-tmp-* tests/compile tests/templates/tests && echo "artifacts removed"

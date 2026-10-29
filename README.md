@@ -44,19 +44,28 @@ directory and no configuration. `set_compile_location()` moves them.
 ## Command line
 
 `cmd/minitpl` compiles and renders templates without a php script of your
-own. When the package is installed with composer, the command is
-`vendor/bin/minitpl`; in a checkout it is `cmd/minitpl`.
+own. It is a [phpscript](#phpscript) script with a `#!/usr/bin/env phpscript`
+shebang and runs from a checkout of the repository, after `composer install`:
+it loads `vendor/autoload.php` from the root of the clone.
 
 ```sh
+# run it through phpscript, or directly when the script is executable
+phpscript cmd/minitpl compile templates
+./cmd/minitpl compile templates
+
 # transpile every template under templates/ into templates_c/
-vendor/bin/minitpl compile templates
+./cmd/minitpl compile templates
 
 # render a template with data from a yaml file
-vendor/bin/minitpl render templates/page.tpl data.yml
+./cmd/minitpl render templates/page.tpl data.yml
 
 # the same, with the data piped in on standard input
-cat data.yml | vendor/bin/minitpl render templates/page.tpl
+cat data.yml | ./cmd/minitpl render templates/page.tpl
 ```
+
+phpscript roots its source filesystem at the directory it is started in, so
+run the command from the checkout and name the templates and data relative
+to it.
 
 `compile` keeps the directory structure of the source, resolves `{include}`
 against it, and writes each template beside it: `templates/` compiles into
@@ -91,13 +100,15 @@ to be cleared once on upgrade. See
 
 ## phpscript
 
-The engine is kept compatible with
+The engine and the command line run under
 [phpscript](https://github.com/titpetric/phpscript), a PHP interpreter written
-in Go. phpscript resolves `composer.json` and the `vendor/` directory on its
-own, so the same `vendor/autoload.php` include works there:
+in Go. phpscript roots its source filesystem at the directory it is started
+in and reads every path below it, which is why `cmd/minitpl` loads
+`vendor/autoload.php` from the checkout root:
 
 ```sh
 phpscript example.php
+phpscript cmd/minitpl help
 ```
 
 # Testing

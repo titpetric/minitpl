@@ -8,16 +8,30 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Exercises cmd/minitpl as a process, the way a build or a person calls it.
+ *
+ * The command line runs under phpscript, which roots its source filesystem at
+ * the directory it starts in and takes no path outside it. The fixture tree
+ * therefore lives inside the checkout, below a directory this test creates,
+ * and the command is called with paths relative to the project root.
  */
 final class CliTest extends TestCase
 {
 	private string $root;
+	private string $base;
 	private string $cli;
+	private string $phpscript;
 
 	protected function setUp(): void
 	{
+		$phpscript = trim((string) shell_exec('command -v phpscript 2>/dev/null'));
+		if ($phpscript === '') {
+			$this->markTestSkipped('phpscript is not installed; the command line runs under it');
+		}
+
+		$this->phpscript = $phpscript;
 		$this->cli = dirname(__DIR__) . '/cmd/minitpl';
-		$this->root = sys_get_temp_dir() . '/minitpl-cli-' . bin2hex(random_bytes(8));
+		$this->base = '.cli-tmp-' . bin2hex(random_bytes(8));
+		$this->root = dirname(__DIR__) . '/' . $this->base;
 
 		$this->write('templates/page.tpl', "<h1>{title}</h1>\n{include footer.tpl}\n");
 		$this->write('templates/footer.tpl', "<footer>{year}</footer>\n");
@@ -27,65 +41,69 @@ final class CliTest extends TestCase
 
 	protected function tearDown(): void
 	{
+		if (!isset($this->root)) {
+			return;
+		}
+
 		self::rmdir($this->root);
 	}
 
 	public function testCompileWritesTemplatesC(): void
 	{
-		[$status, $stdout, $stderr] = $this->runCli(['compile', $this->root . '/templates']);
+		[$status, $stdout, $stderr] = $this->runCli(['compile', $this->arg('templates')]);
 
 		$this->assertSame(0, $status, $stderr);
-		$this->assertFileExists($this->root . '/templates_c/page.tpl');
-		$this->assertFileExists($this->root . '/templates_c/footer.tpl');
-		$this->assertFileExists($this->root . '/templates_c/partials/note.tpl');
+		$this->assertFileExists($this->host('templates_c/page.tpl'));
+		$this->assertFileExists($this->host('templates_c/footer.tpl'));
+		$this->assertFileExists($this->host('templates_c/partials/note.tpl'));
 
-		$compiled = (string) file_get_contents($this->root . '/templates_c/page.tpl');
+		$compiled = (string) file_get_contents($this->host('templates_c/page.tpl'));
 		$this->assertStringContainsString("\$_v['title']", $compiled);
 		$this->assertStringContainsString('<footer>', $compiled, 'the include is expanded at compile time');
-		$this->assertStringContainsString('compiled 3 templates into ' . $this->root . '/templates_c', $stdout);
+		$this->assertStringContainsString('compiled 3 templates into ' . $this->arg('templates_c'), $stdout);
 	}
 
 	public function testCompileIntoExplicitOutputQuietly(): void
 	{
 		[$status, $stdout, $stderr] = $this->runCli([
-			'compile', '--quiet', $this->root . '/templates', $this->root . '/build',
+			'compile', '--quiet', $this->arg('templates'), $this->arg('build'),
 		]);
 
 		$this->assertSame(0, $status, $stderr);
 		$this->assertSame('', $stdout);
-		$this->assertFileExists($this->root . '/build/page.tpl');
-		$this->assertDirectoryDoesNotExist($this->root . '/templates_c');
+		$this->assertFileExists($this->host('build/page.tpl'));
+		$this->assertDirectoryDoesNotExist($this->host('templates_c'));
 	}
 
 	public function testCompileReportsAnUncompilableTemplate(): void
 	{
 		$this->write('templates/empty.tpl', '');
 
-		[$status, , $stderr] = $this->runCli(['compile', '-q', $this->root . '/templates']);
+		[$status, , $stderr] = $this->runCli(['compile', '-q', $this->arg('templates')]);
 
 		$this->assertSame(1, $status);
-		$this->assertStringContainsString("failed to compile '" . $this->root . "/templates/empty.tpl'", $stderr);
-		$this->assertFileExists($this->root . '/templates_c/page.tpl', 'the other templates still compile');
+		$this->assertStringContainsString("failed to compile '" . $this->arg('templates/empty.tpl') . "'", $stderr);
+		$this->assertFileExists($this->host('templates_c/page.tpl'), 'the other templates still compile');
 	}
 
 	public function testCompileNeedsADirectory(): void
 	{
-		[$status, , $stderr] = $this->runCli(['compile', $this->root . '/missing']);
+		[$status, , $stderr] = $this->runCli(['compile', $this->arg('missing')]);
 
 		$this->assertSame(1, $status);
-		$this->assertStringContainsString("templates directory '" . $this->root . "/missing' does not exist", $stderr);
+		$this->assertStringContainsString("templates directory '" . $this->arg('missing') . "' does not exist", $stderr);
 	}
 
 	public function testRenderWithDataFile(): void
 	{
 		[$status, $stdout, $stderr] = $this->runCli([
-			'render', $this->root . '/templates/page.tpl', $this->root . '/data.yml',
+			'render', $this->arg('templates/page.tpl'), $this->arg('data.yml'),
 		]);
 
 		$this->assertSame(0, $status, $stderr);
 		$this->assertSame("<h1>Hello</h1>\n<footer>2026</footer>\n\n", $stdout);
 		$this->assertFileExists(
-			$this->root . '/templates_c/page.tpl',
+			$this->host('templates_c/page.tpl'),
 			'rendering compiles beside the template directory, without configuration'
 		);
 	}
@@ -93,7 +111,7 @@ final class CliTest extends TestCase
 	public function testRenderReadsDataFromStandardInput(): void
 	{
 		[$status, $stdout, $stderr] = $this->runCli(
-			['render', $this->root . '/templates/page.tpl'],
+			['render', $this->arg('templates/page.tpl')],
 			"title: Piped\nyear: 1\n"
 		);
 
@@ -104,7 +122,7 @@ final class CliTest extends TestCase
 	public function testRenderReadsDashAsStandardInput(): void
 	{
 		[$status, $stdout, $stderr] = $this->runCli(
-			['render', $this->root . '/templates/page.tpl', '-'],
+			['render', $this->arg('templates/page.tpl'), '-'],
 			"title: Dash\nyear: 2\n"
 		);
 
@@ -115,7 +133,7 @@ final class CliTest extends TestCase
 	public function testRenderEscapesValuesInMarkup(): void
 	{
 		[$status, $stdout, $stderr] = $this->runCli(
-			['render', $this->root . '/templates/page.tpl'],
+			['render', $this->arg('templates/page.tpl')],
 			"title: \"<b>x</b>\"\nyear: 3\n"
 		);
 
@@ -125,16 +143,16 @@ final class CliTest extends TestCase
 
 	public function testRenderNeedsAnExistingTemplate(): void
 	{
-		[$status, , $stderr] = $this->runCli(['render', $this->root . '/missing.tpl']);
+		[$status, , $stderr] = $this->runCli(['render', $this->arg('missing.tpl')]);
 
 		$this->assertSame(1, $status);
-		$this->assertStringContainsString("template file '" . $this->root . "/missing.tpl' does not exist", $stderr);
+		$this->assertStringContainsString("template file '" . $this->arg('missing.tpl') . "' does not exist", $stderr);
 	}
 
 	public function testRenderRejectsInvalidYaml(): void
 	{
 		[$status, , $stderr] = $this->runCli(
-			['render', $this->root . '/templates/page.tpl'],
+			['render', $this->arg('templates/page.tpl')],
 			"title: [1, 2\n"
 		);
 
@@ -145,7 +163,7 @@ final class CliTest extends TestCase
 	public function testRenderRejectsDataThatIsNotAMapping(): void
 	{
 		[$status, , $stderr] = $this->runCli(
-			['render', $this->root . '/templates/page.tpl'],
+			['render', $this->arg('templates/page.tpl')],
 			"- one\n- two\n"
 		);
 
@@ -156,7 +174,7 @@ final class CliTest extends TestCase
 	public function testRenderRejectsAMissingDataFile(): void
 	{
 		[$status, , $stderr] = $this->runCli([
-			'render', $this->root . '/templates/page.tpl', $this->root . '/missing.yml',
+			'render', $this->arg('templates/page.tpl'), $this->arg('missing.yml'),
 		]);
 
 		$this->assertSame(1, $status);
@@ -165,7 +183,7 @@ final class CliTest extends TestCase
 
 	public function testUnknownOptionIsAnError(): void
 	{
-		[$status, , $stderr] = $this->runCli(['render', '--bogus', $this->root . '/templates/page.tpl']);
+		[$status, , $stderr] = $this->runCli(['render', '--bogus', $this->arg('templates/page.tpl')]);
 
 		$this->assertSame(1, $status);
 		$this->assertStringContainsString("unknown option '--bogus'", $stderr);
@@ -182,11 +200,11 @@ final class CliTest extends TestCase
 
 	public function testCompileHelpDoesNotCompile(): void
 	{
-		[$status, $stdout] = $this->runCli(['compile', '--help', $this->root . '/templates']);
+		[$status, $stdout] = $this->runCli(['compile', '--help', $this->arg('templates')]);
 
 		$this->assertSame(0, $status);
 		$this->assertStringContainsString('Usage:', $stdout);
-		$this->assertDirectoryDoesNotExist($this->root . '/templates_c');
+		$this->assertDirectoryDoesNotExist($this->host('templates_c'));
 	}
 
 	/**
@@ -197,14 +215,14 @@ final class CliTest extends TestCase
 	 */
 	private function runCli(array $args, string $stdin = ''): array
 	{
-		$command = array_merge([PHP_BINARY, $this->cli], $args);
+		$command = array_merge([$this->phpscript, $this->cli], $args);
 		$descriptors = [
 			0 => ['pipe', 'r'],
 			1 => ['pipe', 'w'],
 			2 => ['pipe', 'w'],
 		];
 
-		$process = proc_open($command, $descriptors, $pipes);
+		$process = proc_open($command, $descriptors, $pipes, dirname(__DIR__));
 		$this->assertIsResource($process);
 
 		fwrite($pipes[0], $stdin);
@@ -217,6 +235,18 @@ final class CliTest extends TestCase
 		fclose($pipes[2]);
 
 		return [proc_close($process), $stdout, $stderr];
+	}
+
+	/** The fixture path as the command line, running from the project root, names it */
+	private function arg(string $relative): string
+	{
+		return $this->base . '/' . $relative;
+	}
+
+	/** The fixture path on the host, for the assertions */
+	private function host(string $relative): string
+	{
+		return $this->root . '/' . $relative;
 	}
 
 	private function write(string $relative, string $contents): void

@@ -909,9 +909,16 @@ Removes every registered hook from the template.
 <h3 id="cli">8. Command line <a href="#top">Δ Jump to top</a></h3>
 
 The `cmd/minitpl` script compiles and renders templates from the shell,
-for builds and for trying a template out. With composer it is installed
-as `vendor/bin/minitpl`; in a checkout of the repository it is
-`cmd/minitpl`.
+for builds and for trying a template out. It is a phpscript script with a
+`#!/usr/bin/env phpscript` shebang: run it with `phpscript cmd/minitpl`,
+or make it executable and run `./cmd/minitpl`, from a checkout of the
+repository after `composer install`. It loads `vendor/autoload.php` from
+the root of the clone and uses `MiniTPL\Compiler` and `MiniTPL\Template`
+for the work.
+
+phpscript roots its source filesystem at the directory the command is
+started in and reads every path below it, so run the command from the
+checkout and name the templates and data relative to it.
 
 ##### 8.1. compile
 

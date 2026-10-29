@@ -1,4 +1,4 @@
-#!/usr/bin/env php
+#!/usr/bin/env phpscript
 <?php
 
 /*
@@ -9,89 +9,70 @@
  * read from yaml, so a project can use MiniTPL without writing a php script
  * for either.
  *
+ * The script runs under phpscript, which roots the source filesystem at the
+ * directory it is started from: __DIR__ is "/cmd" and the repository root is
+ * "/". A complete git clone carries vendor/autoload.php there after
+ * composer install.
+ *
  * Tit Petric <black@titpetric.com>, MIT license, see LICENSE.
  */
-
-namespace MiniTPL\Cli;
 
 use MiniTPL\Compiler;
 use MiniTPL\Template;
 use MiniTPL\Yaml;
 
-\define("MINITPL_USAGE", <<<'TEXT'
-minitpl - compile and render MiniTPL templates
+$root = dirname(dirname(__DIR__));
+require $root . "/vendor/autoload.php";
 
-Usage:
-  minitpl compile [options] [templates_dir] [output_dir]
-  minitpl render  [options] <template.tpl> [data.yml]
-  minitpl help
-
-compile
-  Transpiles every .tpl file under templates_dir (default: templates) into
-  output_dir, which defaults to the templates_c directory beside
-  templates_dir. Subdirectories keep their names, and {include} is resolved
-  against templates_dir.
-
-render
-  Renders template.tpl to standard output. Template variables come from a
-  yaml mapping read from data.yml, or from standard input when it is a file
-  or a pipe; pass - to read standard input explicitly.
-
-Options:
-  -o, --output DIR  write compiled templates to DIR (compile)
-  -q, --quiet       print nothing but errors
-  -h, --help        show this help
-TEXT
-);
-
-// When installed with composer, the bin proxy provides the autoloader. A
-// checkout of the repository has one too, after composer install; without
-// either, the four files the command needs are loaded directly.
-if (isset($_composer_autoload_path)) {
-	require_once $_composer_autoload_path;
-} elseif (file_exists(__DIR__ . "/../vendor/autoload.php")) {
-	require_once __DIR__ . "/../vendor/autoload.php";
-} elseif (file_exists(__DIR__ . "/../../../autoload.php")) {
-	require_once __DIR__ . "/../../../autoload.php";
-} else {
-	require_once __DIR__ . "/../code/MiniTPL/Hook.php";
-	require_once __DIR__ . "/../code/MiniTPL/Compiler.php";
-	require_once __DIR__ . "/../code/MiniTPL/Template.php";
-	require_once __DIR__ . "/../code/MiniTPL/Yaml.php";
+/** The commands this command line runs, and the function each one calls */
+function commands() {
+	return array(
+		"compile" => "command_compile",
+		"render" => "command_render",
+		"help" => "command_help",
+		"-h" => "command_help",
+		"--help" => "command_help"
+	);
 }
 
-/** Run the command line and return the exit status */
-function main(array $argv) {
-	$args = array_slice($argv, 1);
-	if (count($args) === 0) {
-		fwrite(STDERR, MINITPL_USAGE . "\n");
-		return 1;
-	}
+/** The usage text */
+function usage() {
+	return "minitpl - compile and render MiniTPL templates\n" .
+		"\n" .
+		"Usage:\n" .
+		"  minitpl compile [options] [templates_dir] [output_dir]\n" .
+		"  minitpl render  [options] <template.tpl> [data.yml]\n" .
+		"  minitpl help\n" .
+		"\n" .
+		"compile\n" .
+		"  Transpiles every .tpl file under templates_dir (default: templates) into\n" .
+		"  output_dir, which defaults to the templates_c directory beside\n" .
+		"  templates_dir. Subdirectories keep their names, and {include} is resolved\n" .
+		"  against templates_dir.\n" .
+		"\n" .
+		"render\n" .
+		"  Renders template.tpl to standard output. Template variables come from a\n" .
+		"  yaml mapping read from data.yml, or from standard input when it is a file\n" .
+		"  or a pipe; pass - to read standard input explicitly.\n" .
+		"\n" .
+		"Options:\n" .
+		"  -o, --output DIR  write compiled templates to DIR (compile)\n" .
+		"  -q, --quiet       print nothing but errors\n" .
+		"  -h, --help        show this help\n";
+}
 
-	$command = array_shift($args);
-	switch ($command) {
-		case "compile":
-			return command_compile($args);
-		case "render":
-			return command_render($args);
-		case "help":
-		case "-h":
-		case "--help":
-			fwrite(STDOUT, MINITPL_USAGE . "\n");
-			return 0;
-	}
-
-	fwrite(STDERR, "minitpl: unknown command '" . $command . "'\n\n" . MINITPL_USAGE . "\n");
-	return 1;
+/** minitpl help */
+function command_help($args) {
+	fwrite(STDOUT, usage() . "\n");
+	return 0;
 }
 
 /** minitpl compile [options] [templates_dir] [output_dir] */
-function command_compile(array $args) {
+function command_compile($args) {
 	list($options, $positional) = parse_options($args);
 
 	if (!empty($options["help"])) {
-		fwrite(STDOUT, MINITPL_USAGE . "\n");
-		return 0;
+		return command_help(array());
 	}
 
 	$source = isset($positional[0]) ? $positional[0] : "templates";
@@ -148,12 +129,11 @@ function command_compile(array $args) {
 }
 
 /** minitpl render [options] <template.tpl> [data.yml] */
-function command_render(array $args) {
+function command_render($args) {
 	list($options, $positional) = parse_options($args);
 
 	if (!empty($options["help"])) {
-		fwrite(STDOUT, MINITPL_USAGE . "\n");
-		return 0;
+		return command_help(array());
 	}
 
 	if (count($positional) === 0) {
@@ -208,7 +188,7 @@ function command_render(array $args) {
 }
 
 /** Split arguments into options and positional values */
-function parse_options(array $args) {
+function parse_options($args) {
 	$options = array();
 	$positional = array();
 	$length = count($args);
@@ -259,7 +239,7 @@ function parse_options(array $args) {
 }
 
 /** Whether an array is a list with indices 0..n */
-function is_list(array $data) {
+function is_list($data) {
 	$index = 0;
 	foreach ($data as $key => $value) {
 		if ($key !== $index++) {
@@ -319,6 +299,25 @@ function stdin_is_tty() {
 	}
 
 	return false;
+}
+
+/** Run the command line and return the exit status */
+function main($argv) {
+	$args = array_slice($argv, 1);
+	if (count($args) === 0) {
+		fwrite(STDERR, usage() . "\n");
+		return 1;
+	}
+
+	$command = $args[0];
+	$args = array_slice($args, 1);
+	$commands = commands();
+	if (!array_key_exists($command, $commands)) {
+		fwrite(STDERR, "minitpl: unknown command '" . $command . "'\n\n" . usage() . "\n");
+		return 1;
+	}
+
+	return call_user_func($commands[$command], $args);
 }
 
 try {
