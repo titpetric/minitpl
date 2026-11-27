@@ -63,7 +63,7 @@ Run `minitpl compile` to compile templates.
 |--------|---------|
 | `minitpl compile [options] [templates_dir] [output_dir]` | `minitpl compile templates templates_c` |
 
-`templates_dir` is the directory holding the source templates and defaults to `templates`. `output_dir` is the directory the compiled templates are written to and defaults to the `templates_c` directory beside the source directory. Subdirectories keep their names, and `{include}` resolves against the source directory.
+`templates_dir` is the directory holding the source templates and defaults to `templates`; it has to exist, and a missing directory fails the command. `output_dir` is the directory the compiled templates are written to and defaults to the `templates_c` directory beside the source directory. Subdirectories keep their names, and `{include}` resolves against the source directory.
 
 ### Rendering
 
