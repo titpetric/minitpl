@@ -43,33 +43,33 @@ directory and no configuration. `set_compile_location()` moves them.
 
 ## CLI
 
-A `minitpl` binary is provided. `minitpl --help` prints this usage:
+A `minitpl` binary is provided. It compiles templates and renders them with data, and `minitpl --help` prints the same usage.
 
-```text
-minitpl - compile and render MiniTPL templates
+### compile
 
-Usage:
-  minitpl compile [options] [templates_dir] [output_dir]
-  minitpl render  [options] <template.tpl> [data.yml]
-  minitpl help
+`minitpl compile [options] [templates_dir] [output_dir]`
 
-compile
-  Transpiles every .tpl file under templates_dir (default: templates) into
-  output_dir, which defaults to the templates_c directory beside
-  templates_dir. Subdirectories keep their names, and {include} is resolved
-  against templates_dir.
+Transpiles every `.tpl` file under `templates_dir` (default `templates`) into `output_dir`, which defaults to the `templates_c` directory beside `templates_dir`. Subdirectories keep their names, and `{include}` is resolved against `templates_dir`.
 
-render
-  Renders template.tpl to standard output. Template variables come from a
-  yaml mapping read from data.yml, or from standard input when data.yml is
-  omitted and standard input is not a terminal; pass - to read standard
-  input explicitly.
+### render
 
-Options:
-  -o, --output DIR  write compiled templates to DIR (compile)
-  -q, --quiet       print nothing but errors
-  -h, --help        show this help
-```
+`minitpl render [options] <template.tpl> [data.yml]`
+
+Renders `template.tpl` to standard output. Template variables come from a yaml mapping read from `data.yml`, or from standard input when `data.yml` is omitted and standard input is not a terminal; pass `-` to read standard input explicitly.
+
+### help
+
+`minitpl help`
+
+Prints the usage.
+
+### Options
+
+| Option | What it does |
+|--------|--------------|
+| `-o, --output DIR` | Write compiled templates to `DIR` (compile). |
+| `-q, --quiet` | Print nothing but errors. |
+| `-h, --help` | Show the help. |
 
 # Testing
 
