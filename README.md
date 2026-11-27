@@ -44,9 +44,9 @@ directory and no configuration. `set_compile_location()` moves them.
 ## Command line
 
 `cmd/minitpl` compiles and renders templates without a php script of your
-own. It is a [phpscript](#phpscript) script with a `#!/usr/bin/env phpscript`
-shebang and runs from a checkout of the repository, after `composer install`:
-it loads `vendor/autoload.php` from the root of the clone.
+own. It is a phpscript script with a `#!/usr/bin/env phpscript` shebang and
+runs from a checkout of the repository, after `composer install`: it loads
+`vendor/autoload.php` from the root of the clone.
 
 ```sh
 # run it through phpscript, or directly when the script is executable
@@ -77,39 +77,6 @@ to standard output. The yaml comes from the binding the runtime registers,
 `yaml_decode()`, listed by `phpscript list --bindings`; a runtime without
 that binding decodes json instead. The command line carries no reader of
 its own.
-
-## Escaping
-
-Printed variables are escaped by default. The compiler scans the template
-to see where a variable lands, so `{title}` is escaped in a text node, in
-an attribute value and in a comment, and left alone inside a `<script>` or
-`<style>` body where html escaping would corrupt the code:
-
-```smarty
-<a href="{news.link}" title="{news.title}">{news.title}</a>
-```
-
-A value that is already markup opts out per tag with `{content|raw}`, or
-its `{content|unescape}` alias. A whole template opts out with the
-`{*noescape*}` directive, and a whole `Template` instance with
-`$tpl->set_escape(false)`.
-
-This changes compiled output, so a cache written by an earlier version has
-to be cleared once on upgrade. See
-[docs/minitpl-usage.md](docs/minitpl-usage.md) for the full rules.
-
-## phpscript
-
-The engine and the command line run under
-[phpscript](https://github.com/titpetric/phpscript), a PHP interpreter written
-in Go. phpscript roots its source filesystem at the directory it is started
-in and reads every path below it, which is why `cmd/minitpl` loads
-`vendor/autoload.php` from the checkout root:
-
-```sh
-phpscript example.php
-phpscript cmd/minitpl help
-```
 
 # Testing
 
