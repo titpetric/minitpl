@@ -39,19 +39,17 @@ function usage() {
 		"\n" .
 		"Usage:\n" .
 		"  minitpl compile [options] [templates_dir] [output_dir]\n" .
-		"  minitpl render  [options] <template.tpl> [data.yml]\n" .
+		"  minitpl render  [options] [template] [data.yml]\n" .
 		"\n" .
 		"compile\n" .
-		"  Transpiles every .tpl file under templates_dir (default: templates) into\n" .
-		"  output_dir, which defaults to the templates_c directory beside\n" .
-		"  templates_dir. Subdirectories keep their names, and {include} is resolved\n" .
-		"  against templates_dir.\n" .
+		"  Compiles every .tpl file under templates_dir (default: templates) into a\n" .
+		"  sibling named after it with _c appended, or into output_dir.\n" .
+		"  Subdirectories keep their names.\n" .
 		"\n" .
 		"render\n" .
-		"  Renders template.tpl to standard output. Template variables come from a\n" .
-		"  yaml mapping read from data.yml, or from standard input when data.yml is\n" .
-		"  omitted and standard input is not a terminal; pass - to read standard\n" .
-		"  input explicitly.\n" .
+		"  Renders the template to standard output. The values come from data.yml,\n" .
+		"  or from standard input when data.yml is omitted and standard input is not\n" .
+		"  a terminal; pass - to read standard input explicitly.\n" .
 		"\n" .
 		"Options:\n" .
 		"  -q, --quiet  print nothing but errors (compile)\n" .
