@@ -43,33 +43,15 @@ directory and no configuration. `set_compile_location()` moves them.
 
 ## CLI
 
-A `minitpl` binary is provided. It compiles templates and renders them with data, and `minitpl --help` prints the same usage.
+The `minitpl` binary compiles templates and renders them with data, and `minitpl --help` prints the usage. The options are `-o, --output DIR` for the compilation output directory, `-q, --quiet` to print nothing but errors, and `-h, --help` to print the usage.
 
-### compile
+### Compilation
 
-`minitpl compile [options] [templates_dir] [output_dir]`
+Run `minitpl compile` to compile templates, pass the source and output directories as additional arguments. The source directory defaults to `templates`, and the output directory defaults to the `templates_c` directory beside it. Subdirectories keep their names, and `{include}` resolves against the source directory.
 
-Transpiles every `.tpl` file under `templates_dir` (default `templates`) into `output_dir`, which defaults to the `templates_c` directory beside `templates_dir`. Subdirectories keep their names, and `{include}` is resolved against `templates_dir`.
+### Rendering
 
-### render
-
-`minitpl render [options] <template.tpl> [data.yml]`
-
-Renders `template.tpl` to standard output. Template variables come from a yaml mapping read from `data.yml`, or from standard input when `data.yml` is omitted and standard input is not a terminal; pass `-` to read standard input explicitly.
-
-### help
-
-`minitpl help`
-
-Prints the usage.
-
-### Options
-
-| Option | What it does |
-|--------|--------------|
-| `-o, --output DIR` | Write compiled templates to `DIR` (compile). |
-| `-q, --quiet` | Print nothing but errors. |
-| `-h, --help` | Show the help. |
+Run `minitpl render` to render templates, pass the filename and data as additional arguments. The rendered template is written to standard output. The data is a yaml mapping read from the named file, or from standard input when the file is omitted and standard input is not a terminal; pass `-` to read standard input explicitly.
 
 # Testing
 
