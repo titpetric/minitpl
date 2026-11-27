@@ -43,7 +43,7 @@ directory and no configuration. `set_compile_location()` moves them.
 
 ## CLI
 
-The `minitpl` binary compiles templates and renders them with data. The execution format is:
+The `minitpl` binary compiles templates and renders them with data.
 
 ```text
 minitpl compile [options] [templates_dir] [output_dir]
@@ -52,29 +52,28 @@ minitpl render [options] <template.tpl> [data.yml]
 
 The options are:
 
-- `-o, --output DIR` writes compiled templates to `DIR`, for `compile`.
-- `-q, --quiet` prints nothing but errors.
+- `-q, --quiet` prints nothing but errors, for `compile`.
 - `-h, --help` prints the usage.
 
 ### Compilation
 
-Run `minitpl compile` to compile templates, pass the source and output directories as additional arguments. The source directory defaults to `templates`, and the output directory defaults to the `templates_c` directory beside it. Subdirectories keep their names, and `{include}` resolves against the source directory.
+Run `minitpl compile` to compile templates.
 
-Example:
+| Format | Example |
+|--------|---------|
+| `minitpl compile [options] [templates_dir] [output_dir]` | `minitpl compile templates templates_c` |
 
-```sh
-minitpl compile templates templates_c
-```
+`templates_dir` is the directory holding the source templates and defaults to `templates`. `output_dir` is the directory the compiled templates are written to and defaults to the `templates_c` directory beside the source directory. Subdirectories keep their names, and `{include}` resolves against the source directory.
 
 ### Rendering
 
-Run `minitpl render` to render templates, pass the filename and data as additional arguments. The rendered template is written to standard output. The data is a yaml mapping read from the named file, or from standard input when the file is omitted and standard input is not a terminal; pass `-` to read standard input explicitly.
+Run `minitpl render` to render templates.
 
-Example:
+| Format | Example |
+|--------|---------|
+| `minitpl render [options] <template.tpl> [data.yml]` | `minitpl render templates/page.tpl data.yml` |
 
-```sh
-minitpl render templates/page.tpl data.yml
-```
+`template.tpl` is the template file and is required. `data.yml` is a yaml mapping read into the template variables, and is optional; when it is omitted and standard input is not a terminal, the mapping is read from standard input. Pass `-` to read standard input explicitly. The rendered template is written to standard output.
 
 # Testing
 

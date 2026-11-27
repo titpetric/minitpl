@@ -54,9 +54,8 @@ function usage() {
 		"  input explicitly.\n" .
 		"\n" .
 		"Options:\n" .
-		"  -o, --output DIR  write compiled templates to DIR (compile)\n" .
-		"  -q, --quiet       print nothing but errors\n" .
-		"  -h, --help        show this help\n";
+		"  -q, --quiet  print nothing but errors (compile)\n" .
+		"  -h, --help   show this help\n";
 }
 
 /** minitpl --help */
@@ -78,9 +77,7 @@ function command_compile($args) {
 		throw new \RuntimeException("templates directory '" . $source . "' does not exist");
 	}
 
-	if (isset($options["output"])) {
-		$output = $options["output"];
-	} elseif (isset($positional[1])) {
+	if (isset($positional[1])) {
 		$output = $positional[1];
 	} else {
 		$output = compiled_dir($source);
@@ -223,20 +220,6 @@ function parse_options($args) {
 			}
 
 			break;
-		}
-
-		if ($arg === "-o" || $arg === "--output") {
-			if ($i + 1 >= $length) {
-				throw new \RuntimeException($arg . " needs a directory");
-			}
-
-			$options["output"] = $args[++$i];
-			continue;
-		}
-
-		if (substr($arg, 0, 9) === "--output=") {
-			$options["output"] = substr($arg, 9);
-			continue;
 		}
 
 		if ($arg === "-q" || $arg === "--quiet") {
