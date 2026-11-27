@@ -191,7 +191,7 @@ final class CliTest extends TestCase
 
 	public function testHelp(): void
 	{
-		[$status, $stdout] = $this->runCli(['help']);
+		[$status, $stdout] = $this->runCli(['--help']);
 
 		$this->assertSame(0, $status);
 		$this->assertStringContainsString('Usage:', $stdout);

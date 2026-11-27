@@ -48,7 +48,6 @@ The `minitpl` binary compiles templates and renders them with data. The executio
 ```text
 minitpl compile [options] [templates_dir] [output_dir]
 minitpl render [options] <template.tpl> [data.yml]
-minitpl help
 ```
 
 The options are:

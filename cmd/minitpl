@@ -28,7 +28,6 @@ function commands() {
 	return array(
 		"compile" => "command_compile",
 		"render" => "command_render",
-		"help" => "command_help",
 		"-h" => "command_help",
 		"--help" => "command_help"
 	);
@@ -41,7 +40,6 @@ function usage() {
 		"Usage:\n" .
 		"  minitpl compile [options] [templates_dir] [output_dir]\n" .
 		"  minitpl render  [options] <template.tpl> [data.yml]\n" .
-		"  minitpl help\n" .
 		"\n" .
 		"compile\n" .
 		"  Transpiles every .tpl file under templates_dir (default: templates) into\n" .
@@ -61,7 +59,7 @@ function usage() {
 		"  -h, --help        show this help\n";
 }
 
-/** minitpl help */
+/** minitpl --help */
 function command_help($args) {
 	fwrite(STDOUT, usage());
 	return 0;
