@@ -41,42 +41,35 @@ Compiled templates are written to a `templates_c/` directory next to the
 `templates/` directory, so the default `Template` needs a writable project
 directory and no configuration. `set_compile_location()` moves them.
 
-## Command line
+## CLI
 
-`cmd/minitpl` compiles and renders templates without a php script of your
-own. It is a phpscript script with a `#!/usr/bin/env phpscript` shebang and
-runs from a checkout of the repository, after `composer install`: it loads
-`vendor/autoload.php` from the root of the clone.
+A `minitpl` binary is provided. `minitpl --help` prints this usage:
 
-```sh
-# run it through phpscript, or directly when the script is executable
-phpscript cmd/minitpl compile templates
-./cmd/minitpl compile templates
+```text
+minitpl - compile and render MiniTPL templates
 
-# transpile every template under templates/ into templates_c/
-./cmd/minitpl compile templates
+Usage:
+  minitpl compile [options] [templates_dir] [output_dir]
+  minitpl render  [options] <template.tpl> [data.yml]
+  minitpl help
 
-# render a template with data from a yaml file
-./cmd/minitpl render templates/page.tpl data.yml
+compile
+  Transpiles every .tpl file under templates_dir (default: templates) into
+  output_dir, which defaults to the templates_c directory beside
+  templates_dir. Subdirectories keep their names, and {include} is resolved
+  against templates_dir.
 
-# the same, with the data piped in on standard input
-cat data.yml | ./cmd/minitpl render templates/page.tpl
+render
+  Renders template.tpl to standard output. Template variables come from a
+  yaml mapping read from data.yml, or from standard input when data.yml is
+  omitted and standard input is not a terminal; pass - to read standard
+  input explicitly.
+
+Options:
+  -o, --output DIR  write compiled templates to DIR (compile)
+  -q, --quiet       print nothing but errors
+  -h, --help        show this help
 ```
-
-phpscript roots its source filesystem at the directory it is started in, so
-run the command from the checkout and name the templates and data relative
-to it.
-
-`compile` keeps the directory structure of the source, resolves `{include}`
-against it, and writes each template beside it: `templates/` compiles into
-`templates_c/`. `-o DIR` writes elsewhere and `-q` prints nothing but
-errors.
-
-`render` reads a yaml mapping into template variables and prints the result
-to standard output. The yaml comes from the binding the runtime registers,
-`yaml_decode()`, listed by `phpscript list --bindings`; a runtime without
-that binding decodes json instead. The command line carries no reader of
-its own.
 
 # Testing
 

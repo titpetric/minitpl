@@ -51,8 +51,9 @@ function usage() {
 		"\n" .
 		"render\n" .
 		"  Renders template.tpl to standard output. Template variables come from a\n" .
-		"  yaml mapping read from data.yml, or from standard input when it is a file\n" .
-		"  or a pipe; pass - to read standard input explicitly.\n" .
+		"  yaml mapping read from data.yml, or from standard input when data.yml is\n" .
+		"  omitted and standard input is not a terminal; pass - to read standard\n" .
+		"  input explicitly.\n" .
 		"\n" .
 		"Options:\n" .
 		"  -o, --output DIR  write compiled templates to DIR (compile)\n" .
@@ -62,7 +63,7 @@ function usage() {
 
 /** minitpl help */
 function command_help($args) {
-	fwrite(STDOUT, usage() . "\n");
+	fwrite(STDOUT, usage());
 	return 0;
 }
 
