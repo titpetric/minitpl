@@ -59,9 +59,8 @@ The options are:
 
 Run `minitpl compile` to compile templates.
 
-| Format | Example |
-|--------|---------|
-| `minitpl compile [options] [templates_dir] [output_dir]` | `minitpl compile templates templates_c` |
+- Format: `minitpl compile [options] [templates_dir] [output_dir]`
+- Example: `minitpl compile templates templates_c`
 
 `templates_dir` is the directory holding the source templates and defaults to `templates`; it has to exist, and a missing directory fails the command. The directory is read recursively: every `.tpl` file below it is compiled, and subdirectories keep their names. `{include}` resolves against the source directory. `output_dir` is the directory the compiled templates are written to and defaults to a sibling of the source directory named after it with `_c` appended, so `templates` compiles into `templates_c`.
 
@@ -69,9 +68,8 @@ Run `minitpl compile` to compile templates.
 
 Run `minitpl render` to render templates.
 
-| Format | Example |
-|--------|---------|
-| `minitpl render [options] <template.tpl> [data.yml]` | `minitpl render templates/page.tpl data.yml` |
+- Format: `minitpl render [options] <template.tpl> [data.yml]`
+- Example: `minitpl render templates/page.tpl data.yml`
 
 `template.tpl` is the template file and is required. `data.yml` is a yaml mapping read into the template variables, and is optional; when it is omitted and standard input is not a terminal, the mapping is read from standard input. Pass `-` to read standard input explicitly. The rendered template is written to standard output.
 
