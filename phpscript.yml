@@ -1,0 +1,3 @@
+# The suite root is the module root, where composer installs the autoloader.
+test:
+  include: vendor/autoload.php
